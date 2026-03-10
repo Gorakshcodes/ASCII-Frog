@@ -1,0 +1,4610 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>ASCII FROG</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Courier+Prime:wght@400;700&display=swap');
+
+    :root {
+      --ui-bg: rgba(8, 14, 10, 0.62);
+      --ui-border: rgba(180, 255, 180, 0.34);
+      --ui-text: #e6ffe6;
+      --ui-accent: #83ff83;
+      --ui-warn: #ffd166;
+      --ui-danger: #ff7070;
+    }
+
+    * {
+      box-sizing: border-box;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    html,
+    body {
+      margin: 0;
+      height: 100%;
+      overflow: hidden;
+      background: #000;
+      font-family: 'Courier Prime', monospace;
+      color: var(--ui-text);
+      touch-action: none;
+    }
+
+    #wrap {
+      position: relative;
+      width: 100vw;
+      height: 100vh;
+    }
+
+    #gameCanvas {
+      display: block;
+      width: 100%;
+      height: 100%;
+      image-rendering: pixelated;
+      image-rendering: crisp-edges;
+    }
+
+    #hud {
+      position: absolute;
+      left: 12px;
+      top: 12px;
+      display: grid;
+      gap: 10px;
+      pointer-events: none;
+      z-index: 10;
+    }
+
+    .panel {
+      background: var(--ui-bg);
+      border: 1px solid var(--ui-border);
+      border-radius: 8px;
+      padding: 8px 10px;
+      min-width: 260px;
+      text-shadow: 0 1px 0 #000;
+      box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.45) inset;
+    }
+
+    .line {
+      font-size: 14px;
+      line-height: 1.35;
+      white-space: nowrap;
+    }
+
+    #status {
+      color: var(--ui-accent);
+      font-weight: 700;
+    }
+
+    .line-soft {
+      color: rgba(226, 255, 226, 0.82);
+    }
+
+    #help {
+      position: absolute;
+      top: 12px;
+      right: 12px;
+      pointer-events: none;
+      z-index: 10;
+      text-align: right;
+    }
+
+    #help .line {
+      font-size: 14px;
+      opacity: 0.92;
+    }
+
+    #mobile-controls {
+      position: absolute;
+      left: 50%;
+      transform: translateX(-50%);
+      bottom: 12px;
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      gap: 7px;
+      z-index: 20;
+      user-select: none;
+    }
+
+    .d-pad-row {
+      display: flex;
+      gap: 7px;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .d-btn {
+      width: 58px;
+      height: 58px;
+      border-radius: 12px;
+      border: 1px solid rgba(200, 255, 200, 0.35);
+      background: rgba(18, 30, 18, 0.65);
+      color: #e4ffe4;
+      font-size: 28px;
+      display: grid;
+      place-items: center;
+      pointer-events: auto;
+      text-shadow: 0 1px 0 #000;
+      box-shadow: inset 0 -2px 0 rgba(0, 0, 0, 0.35);
+      cursor: pointer;
+    }
+
+    .d-btn:active {
+      transform: translateY(1px);
+      background: rgba(42, 72, 42, 0.82);
+    }
+
+    .spacer {
+      width: 58px;
+      height: 58px;
+    }
+
+    @media (max-width: 920px), (hover: none), (pointer: coarse) {
+      #mobile-controls {
+        display: flex;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div id="wrap">
+    <canvas id="gameCanvas"></canvas>
+
+    <div id="hud">
+      <div class="panel">
+        <div class="line" id="levelLine">LEVEL 1</div>
+        <div class="line" id="scoreLine">SCORE 0</div>
+        <div class="line" id="frogHealthLine">ASCII HP [##########] 100%</div>
+        <div class="line" id="progressLine">PROGRESS [--------------] 0%</div>
+      </div>
+      <div class="panel">
+        <div class="line" id="status">READ THE SWAMP</div>
+        <div class="line line-soft" id="objectiveLine">OBJECTIVE: LEARN THE OPENING FLOW</div>
+        <div class="line line-soft" id="focusLine">FOCUS: PATTERN CUES</div>
+        <div class="line line-soft" id="contextLine">WORLD: NIGHT WATER</div>
+        <div class="line line-soft" id="rivalHealthLine">RIVAL: -</div>
+      </div>
+    </div>
+
+    <div id="help" class="panel">
+      <div class="line">ARROWS: SHOOT</div>
+      <div class="line">SPACE+ARROW: JUMP (L3+) | REVERSE: BRAKE</div>
+      <div class="line">ENTER: START | P: PAUSE | F: FULLSCREEN | M: MUTE</div>
+      <div class="line">X: MED LINE SHOT</div>
+      <div class="line" id="audioLine">SOUND: TAP OR PRESS A KEY</div>
+    </div>
+
+    <div id="mobile-controls" aria-label="Touch controls">
+      <div class="d-pad-row"><button class="d-btn" id="btn-up" aria-label="Shoot up">▲</button></div>
+      <div class="d-pad-row">
+        <button class="d-btn" id="btn-left" aria-label="Shoot left">◄</button>
+        <div class="spacer"></div>
+        <button class="d-btn" id="btn-right" aria-label="Shoot right">►</button>
+      </div>
+      <div class="d-pad-row"><button class="d-btn" id="btn-down" aria-label="Shoot down">▼</button></div>
+    </div>
+  </div>
+
+  <script>
+    const canvas = document.getElementById('gameCanvas');
+    const ctx = canvas.getContext('2d');
+
+    const scoreLine = document.getElementById('scoreLine');
+    const levelLine = document.getElementById('levelLine');
+    const frogHealthLine = document.getElementById('frogHealthLine');
+    const rivalHealthLine = document.getElementById('rivalHealthLine');
+    const progressLine = document.getElementById('progressLine');
+    const statusLine = document.getElementById('status');
+    const objectiveLine = document.getElementById('objectiveLine');
+    const focusLine = document.getElementById('focusLine');
+    const contextLine = document.getElementById('contextLine');
+    const audioLine = document.getElementById('audioLine');
+    const hud = document.getElementById('hud');
+    const help = document.getElementById('help');
+
+    const MODE = {
+      START: 'START',
+      PLAYING: 'PLAYING',
+      LEVEL_UP: 'LEVEL_UP',
+      PAUSED: 'PAUSED',
+      GAME_OVER: 'GAME_OVER',
+      WIN: 'WIN'
+    };
+
+    const DIRS = ['UP', 'RIGHT', 'DOWN', 'LEFT'];
+    const SHOT_DIRS = ['UP', 'UP_RIGHT', 'RIGHT', 'DOWN_RIGHT', 'DOWN', 'DOWN_LEFT', 'LEFT', 'UP_LEFT'];
+
+    const environments = [
+      { name: 'SWAMP', bgA: '#06240a', bgB: '#030d04', fg: '#1a4f1a', char: '~', frogColor: '#7dff5f' },
+      { name: 'REEDS', bgA: '#2f2a05', bgB: '#0e0c02', fg: '#5f5510', char: '.', frogColor: '#d2ff66' },
+      { name: 'MOON POND', bgA: '#0a1d33', bgB: '#02070d', fg: '#234a70', char: '*', frogColor: '#6ff8ff' },
+      { name: 'EMBER BOG', bgA: '#341108', bgB: '#100302', fg: '#6a2a15', char: '^', frogColor: '#ffb265' },
+      { name: 'NEON MARSH', bgA: '#260729', bgB: '#08010b', fg: '#52175a', char: '+' , frogColor: '#ff85f7'}
+    ];
+
+    const FLY_DEFS = {
+      normal: {
+        id: 'normal',
+        name: 'Normal Fly',
+        glyph: '&',
+        color: '#ffe867',
+        points: 10,
+        speed: 1.18,
+        radius: 18
+      },
+      grasshopper: {
+        id: 'grasshopper',
+        name: 'Grasshopper',
+        glyph: 'h',
+        color: '#9eff64',
+        points: 16,
+        speed: 1.42,
+        radius: 20
+      },
+      bomb: {
+        id: 'bomb',
+        name: 'Bomb Fly',
+        glyph: '*',
+        color: '#ff6767',
+        points: 0,
+        speed: 0.92,
+        radius: 22
+      },
+      firefly: {
+        id: 'firefly',
+        name: 'Firefly',
+        glyph: 'o',
+        color: '#fff27f',
+        points: 18,
+        speed: 1.08,
+        radius: 18
+      },
+      poison: {
+        id: 'poison',
+        name: 'Poison Fly',
+        glyph: 'p',
+        color: '#c173ff',
+        points: 12,
+        speed: 1.2,
+        radius: 20
+      },
+      spiral: {
+        id: 'spiral',
+        name: 'Spiral Fly',
+        glyph: '@',
+        color: '#7bd3ff',
+        points: 20,
+        speed: 1.3,
+        radius: 20
+      },
+      letter: {
+        id: 'letter',
+        name: 'Letter Fly',
+        glyph: 'L',
+        color: '#f9fdff',
+        points: 100,
+        speed: 1.18,
+        radius: 22
+      },
+      medicinal: {
+        id: 'medicinal',
+        name: 'Medicinal Fly',
+        glyph: 'M',
+        color: '#ffd95a',
+        points: 24,
+        speed: 1.05,
+        radius: 20
+      }
+    };
+
+    const LEVELS = [
+      {
+        level: 1,
+        intro: 'L1: READ THE ALTERNATION',
+        goal: 120,
+        cap: 8,
+        interval: 0.95,
+        extraChance: 0.12,
+        opening: 5,
+        pool: { normal: 1 }
+      },
+      {
+        level: 2,
+        intro: 'L2: FEEL THE CYCLE',
+        goal: 260,
+        cap: 10,
+        interval: 0.86,
+        extraChance: 0.2,
+        opening: 6,
+        pool: { normal: 0.78, grasshopper: 0.22 }
+      },
+      {
+        level: 3,
+        intro: 'L3: READ THE LANES',
+        goal: 430,
+        cap: 11,
+        interval: 0.8,
+        extraChance: 0.24,
+        opening: 7,
+        pool: { normal: 0.68, grasshopper: 0.2, medicinal: 0.12 }
+      },
+      {
+        level: 4,
+        intro: 'L4: HOLD THE GEOMETRY',
+        goal: 650,
+        cap: 12,
+        interval: 0.74,
+        extraChance: 0.28,
+        opening: 7,
+        pool: { normal: 0.56, grasshopper: 0.2, medicinal: 0.1, bomb: 0.14 }
+      },
+      {
+        level: 5,
+        intro: 'L5: FOLLOW THE SEQUENCE',
+        goal: 920,
+        cap: 13,
+        interval: 0.68,
+        extraChance: 0.32,
+        opening: 8,
+        pool: { normal: 0.48, grasshopper: 0.19, medicinal: 0.09, bomb: 0.13, firefly: 0.11 }
+      },
+      {
+        level: 6,
+        intro: 'L6: TRACK THE TIDE',
+        goal: 1260,
+        cap: 14,
+        interval: 0.63,
+        extraChance: 0.35,
+        opening: 8,
+        pool: { normal: 0.4, grasshopper: 0.18, medicinal: 0.08, bomb: 0.14, firefly: 0.1, poison: 0.1 }
+      },
+      {
+        level: 7,
+        intro: 'L7: BREAK THE MIRROR',
+        goal: 1650,
+        cap: 14,
+        interval: 0.61,
+        extraChance: 0.36,
+        opening: 8,
+        pool: { normal: 0.32, grasshopper: 0.16, medicinal: 0.08, bomb: 0.14, firefly: 0.1, poison: 0.1, letter: 0.1 }
+      },
+      {
+        level: 8,
+        intro: 'L8: REMEMBER THE GLOW',
+        goal: 2120,
+        cap: 15,
+        interval: 0.57,
+        extraChance: 0.4,
+        opening: 9,
+        pool: { normal: 0.28, grasshopper: 0.15, medicinal: 0.08, bomb: 0.14, firefly: 0.1, poison: 0.1, spiral: 0.15 }
+      },
+      {
+        level: 9,
+        intro: 'L9: HOLD TWO RULES',
+        goal: 2680,
+        cap: 16,
+        interval: 0.52,
+        extraChance: 0.44,
+        opening: 10,
+        pool: { normal: 0.2, grasshopper: 0.15, medicinal: 0.08, bomb: 0.16, firefly: 0.11, poison: 0.1, spiral: 0.2 }
+      },
+      {
+        level: 10,
+        intro: 'L10: WATCH THE FALSE SHIFT',
+        goal: 3400,
+        cap: 18,
+        interval: 0.47,
+        extraChance: 0.5,
+        opening: 10,
+        pool: { normal: 0.16, grasshopper: 0.14, medicinal: 0.08, bomb: 0.17, firefly: 0.12, poison: 0.11, spiral: 0.22 }
+      },
+      {
+        level: 11,
+        intro: 'L11: OUTTHINK THE RIVAL',
+        goal: 4300,
+        cap: 19,
+        interval: 0.43,
+        extraChance: 0.56,
+        opening: 12,
+        pool: { normal: 0.12, grasshopper: 0.14, medicinal: 0.08, bomb: 0.17, firefly: 0.13, poison: 0.12, spiral: 0.24 },
+        rival: { type: 'bluefrog', name: 'BLUE FROG', target: 4300, speed: 1.05, aggression: 1 }
+      },
+      {
+        level: 12,
+        intro: 'L12: SURVIVE THE FINAL MAZE',
+        goal: 5800,
+        cap: 22,
+        interval: 0.34,
+        extraChance: 0.68,
+        opening: 14,
+        pool: { normal: 0.1, grasshopper: 0.14, medicinal: 0.08, bomb: 0.18, firefly: 0.12, poison: 0.14, spiral: 0.24 },
+        rival: { type: 'chameleon', name: 'CHAMELEON', target: 5800, speed: 1.2, aggression: 1.35 },
+        rival2: { type: 'bluefrog', name: 'BLUE FROG', target: 5800, speed: 1.1, aggression: 1.1 }
+      }
+    ];
+
+    const LEVEL_FOCUS = {
+      1: { title: 'ALTERNATION', objective: 'Read the left-right swap before you rush.', cue: 'watch the alternating reeds', world: 'binary drift' },
+      2: { title: 'CYCLE', objective: 'Catch inside the repeating pulse window.', cue: 'move with the ripple beat', world: 'pond rhythm' },
+      3: { title: 'MOVEMENT', objective: 'Stand in the lane before the flies arrive.', cue: 'follow the wind lanes', world: 'crosswind current' },
+      4: { title: 'GEOMETRY', objective: 'Use clean spacing and safe angles around danger.', cue: 'read the guide posts', world: 'measured pond' },
+      5: { title: 'SEQUENCE', objective: 'Follow the glowing order instead of chasing noise.', cue: 'trace the firefly chain', world: 'ordered shimmer' },
+      6: { title: 'TREND', objective: 'Adjust as the swamp slowly speeds up.', cue: 'read the rising tide bands', world: 'climbing pressure' },
+      7: { title: 'SYMMETRY', objective: 'Spot what breaks the mirror and commit there.', cue: 'watch the mirrored reeds', world: 'split marsh' },
+      8: { title: 'MEMORY', objective: 'Memorize the reveal, then strike after it fades.', cue: 'hold the glow map in mind', world: 'mist memory' },
+      9: { title: 'MULTI-PATTERN', objective: 'Track lanes and timing at the same time.', cue: 'balance pulse and direction', world: 'double current' },
+      10: { title: 'DECEPTION', objective: 'Expect the rule to change once.', cue: 'trust, then re-check the field', world: 'false calm' },
+      11: { title: 'TRADEOFF', objective: 'Choose safe value or risky value before the rival.', cue: 'read rival territory', world: 'duel marsh' },
+      12: { title: 'SURVIVAL', objective: 'Stay ahead of bullets, bumps, and crowd pressure.', cue: 'read the corridor and keep moving', world: 'final corridor' }
+    };
+
+    const state = {
+      width: 0,
+      height: 0,
+      cx: 0,
+      cy: 0,
+      dpr: 1,
+      mode: MODE.START,
+      score: 0,
+      highScore: Number(localStorage.getItem('ascii-frog-high-score') || 0),
+      level: 1,
+      maxLevel: 12,
+      lives: 5,
+      combo: 1,
+      comboChain: 0,
+      comboTimer: 0,
+      spawnClock: 0,
+      frame: 0,
+      currentEnv: environments[0],
+      bgPattern: [],
+      flies: [],
+      particles: [],
+      floatTexts: [],
+      levelPauseTimer: 0,
+      levelIntroTimer: 0,
+      levelIntroText: '',
+      levelGoal: 120,
+      baseSpawnInterval: 0.9,
+      baseSpawnCap: 8,
+      baseSpawnExtraChance: 0.1,
+      spawnInterval: 0.9,
+      spawnCap: 8,
+      spawnExtraChance: 0.1,
+      shakePower: 0,
+      shakeTimer: 0,
+      showCheatSheet: false,
+      quest: {
+        target: 'ASCIIFROG',
+        label: 'ASCII FROG',
+        active: false,
+        completed: false,
+        progress: 0,
+        reward: 450
+      },
+      effects: {
+        glow: 0,
+        drunk: 0,
+        spiral: 0,
+        medicinal: 0,
+        timeFreeze: 0
+      },
+      health: {
+        frog: 100,
+        maxFrog: 100
+      },
+      weather: {
+        name: 'NIGHT',
+        baseName: 'NIGHT',
+        baseWind: 0,
+        windX: 0,
+        rain: false,
+        snow: false,
+        highWind: false,
+        baseRain: false,
+        baseSnow: false,
+        baseHighWind: false,
+        baseLightningChance: 0,
+        lightningChance: 0,
+        lightningTimer: 0,
+        lightningX: 0,
+        particles: []
+      },
+      aiDirector: {
+        enabled: true,
+        inFlight: false,
+        tickS: 0,
+        intervalS: 7.5,
+        source: 'LOCAL',
+        lastNote: '',
+        directiveTimer: 0,
+        directive: null,
+        runtime: {
+          active: false,
+          spawnCapDelta: 0,
+          spawnIntervalScale: 1,
+          spawnExtraChanceDelta: 0,
+          poolOverrides: null,
+          flySpeedScale: 1,
+          flyFrogPullScale: 1,
+          rivalSpeedScale: 1,
+          rivalAggressionScale: 1,
+          rivalCornerHopScale: 1,
+          rivalTongueRateScale: 1,
+          weatherWindScale: 1,
+          weatherLightningScale: 1,
+          weatherRainMode: 'keep',
+          weatherSnowMode: 'keep',
+          weatherHighWindMode: 'keep'
+        }
+      },
+      frog: {
+        ox: 0,
+        oy: 0,
+        vx: 0,
+        vy: 0,
+        jumpZ: 0,
+        jumpVZ: 0,
+        landSquash: 0,
+        facing: 'RIGHT',
+        jumpCooldown: 0
+      },
+      sweep: {
+        active: false,
+        timer: 0,
+        duration: 0.88,
+        angle: 0,
+        speed: Math.PI * 7.2,
+        range: 300,
+        protectBombs: false
+      },
+      rival: {
+        active: false,
+        type: '',
+        name: '',
+        x: 0,
+        y: 0,
+        vx: 0,
+        vy: 0,
+        score: 0,
+        target: 0,
+        health: 0,
+        maxHealth: 0,
+        speed: 1,
+        aggression: 1,
+        eatCooldown: 0,
+        disturbCooldown: 0,
+        hitCooldown: 0,
+        cornerIndex: 0,
+        cornerTimer: 0,
+        chTongue: {
+          active: false,
+          angle: 0,
+          len: 0,
+          maxLen: 0,
+          out: true,
+          speedOut: 760,
+          speedIn: 0,
+          catchGlyph: '',
+          hitFrog: false
+        },
+        result: ''
+      },
+      rival2: {
+        active: false,
+        type: '',
+        name: '',
+        x: 0,
+        y: 0,
+        vx: 0,
+        vy: 0,
+        score: 0,
+        target: 0,
+        health: 0,
+        maxHealth: 0,
+        speed: 1,
+        aggression: 1,
+        eatCooldown: 0,
+        disturbCooldown: 0,
+        hitCooldown: 0,
+        cornerIndex: 0,
+        cornerTimer: 0,
+        chTongue: {
+          active: false,
+          angle: 0,
+          len: 0,
+          maxLen: 0,
+          out: true,
+          speedOut: 760,
+          speedIn: 0,
+          catchGlyph: '',
+          hitFrog: false
+        },
+        result: ''
+      },
+      ending: {
+        hearts: [],
+        timer: 0,
+        leftCatchTimer: 0,
+        rightCatchTimer: 0,
+        leftTongue: { angle: 0, len: 38, retarget: 0, aimAngle: 0, aimLen: 38 },
+        rightTongue: { angle: Math.PI, len: 38, retarget: 0, aimAngle: Math.PI, aimLen: 38 }
+      },
+      finalChallenge: {
+        active: false,
+        duration: 28,
+        timer: 0,
+        shotCooldown: 0,
+        bullets: []
+      },
+      tongue: {
+        state: 'IDLE',
+        dirName: '',
+        dx: 0,
+        dy: 0,
+        length: 0,
+        baseMaxLength: 260,
+        maxLength: 260,
+        outSpeed: 0,
+        retractSpeed: 0,
+        caughtFlies: [],
+        spinPhase: 0,
+        drunkShot: false,
+        drunkArcDir: 1
+      },
+      medAim: {
+        active: false,
+        timer: 0,
+        fromX: 0,
+        fromY: 0,
+        toX: 0,
+        toY: 0,
+        flies: 0
+      }
+    };
+
+    const keysDown = new Set();
+    let pendingArrowTimer = null;
+    let pendingArrowCode = '';
+
+    const FIXED_STEP = 1 / 60;
+    let rafId = null;
+    let previousTs = 0;
+    let accumulator = 0;
+
+    let audioCtx = null;
+    let masterGain = null;
+    const audioState = {
+      unlocked: false,
+      unavailable: false,
+      muted: false
+    };
+    const music = {
+      timer: null,
+      mode: '',
+      step: 0,
+      tempoMs: 155,
+      winTempoMs: 132,
+      lead: [392.0, 523.25, 659.25, 587.33, 440.0, 523.25, 698.46, 587.33],
+      bass: [196.0, 196.0, 220.0, 220.0, 174.61, 174.61, 196.0, 196.0],
+      loveLead: [392.0, 440.0, 523.25, 587.33, 659.25, 587.33, 523.25, 440.0],
+      loveBass: [146.83, 164.81, 174.61, 196.0, 174.61, 164.81, 146.83, 130.81],
+      winLead: [523.25, 659.25, 783.99, 1046.5, 783.99, 1174.66, 1046.5, 783.99],
+      winBass: [130.81, 130.81, 146.83, 174.61, 196.0, 174.61, 164.81, 146.83],
+      winSpark: [1046.5, 1318.51, 1567.98, 1318.51]
+    };
+
+    function ensureAudio() {
+      if (!audioCtx) {
+        const AC = window.AudioContext || window.webkitAudioContext;
+        if (AC) {
+          audioCtx = new AC();
+          masterGain = audioCtx.createGain();
+          masterGain.gain.value = audioState.muted ? 0 : 1;
+          masterGain.connect(audioCtx.destination);
+          audioCtx.onstatechange = () => {
+            audioState.unlocked = audioCtx.state === 'running';
+            updateAudioLine();
+          };
+        } else {
+          audioState.unavailable = true;
+        }
+      }
+      updateAudioLine();
+      return audioCtx;
+    }
+
+    function updateAudioLine() {
+      if (audioState.unavailable) {
+        audioLine.textContent = 'SOUND: NOT SUPPORTED';
+        return;
+      }
+      if (!audioCtx) {
+        audioLine.textContent = 'SOUND: TAP OR PRESS A KEY';
+        return;
+      }
+      if (audioState.muted) {
+        audioLine.textContent = 'SOUND: MUTED (PRESS M)';
+        return;
+      }
+      if (audioCtx.state === 'running') {
+        audioLine.textContent = 'SOUND: ON';
+        return;
+      }
+      if (audioCtx.state === 'suspended') {
+        audioLine.textContent = 'SOUND: BLOCKED, TAP OR PRESS A KEY';
+        return;
+      }
+      audioLine.textContent = `SOUND: ${audioCtx.state.toUpperCase()}`;
+    }
+
+    function syncMasterGain() {
+      if (!masterGain || !audioCtx) return;
+      masterGain.gain.cancelScheduledValues(audioCtx.currentTime);
+      masterGain.gain.setValueAtTime(audioState.muted ? 0 : 1, audioCtx.currentTime);
+      updateAudioLine();
+    }
+
+    function unlockAudio() {
+      ensureAudio();
+      if (!audioCtx) return;
+      if (audioCtx.state === 'suspended') {
+        audioCtx.resume()
+          .then(() => {
+            audioState.unlocked = true;
+            syncMasterGain();
+          })
+          .catch(() => {
+            updateAudioLine();
+          });
+        return;
+      }
+      audioState.unlocked = audioCtx.state === 'running';
+      syncMasterGain();
+    }
+
+    function toggleMute() {
+      audioState.muted = !audioState.muted;
+      syncMasterGain();
+      if (!audioState.muted) unlockAudio();
+    }
+
+    function beep(config) {
+      if (!audioCtx) return;
+      const now = audioCtx.currentTime;
+      const osc = audioCtx.createOscillator();
+      const gain = audioCtx.createGain();
+      osc.type = config.type || 'square';
+      osc.connect(gain);
+      gain.connect(masterGain || audioCtx.destination);
+      osc.frequency.setValueAtTime(config.from, now);
+      if (config.to) {
+        osc.frequency.exponentialRampToValueAtTime(config.to, now + config.duration);
+      }
+      gain.gain.setValueAtTime(config.gain || 0.08, now);
+      gain.gain.exponentialRampToValueAtTime(0.0001, now + config.duration);
+      osc.start(now);
+      osc.stop(now + config.duration);
+    }
+
+    function playBitNote(freq, duration, gainValue, wave = 'square') {
+      if (!audioCtx) return;
+      const now = audioCtx.currentTime;
+      const osc = audioCtx.createOscillator();
+      const gain = audioCtx.createGain();
+      osc.type = wave;
+      osc.frequency.setValueAtTime(freq, now);
+      osc.connect(gain);
+      gain.connect(masterGain || audioCtx.destination);
+      gain.gain.setValueAtTime(gainValue, now);
+      gain.gain.exponentialRampToValueAtTime(0.0001, now + duration);
+      osc.start(now);
+      osc.stop(now + duration);
+    }
+
+    function playCatchCelebrate(fly) {
+      if (!fly) {
+        playSound('eat');
+        return;
+      }
+      if (fly.id === 'grasshopper') {
+        playSound('eatGrasshopper');
+        return;
+      }
+      if (fly.id === 'firefly') {
+        playSound('eatFirefly');
+        return;
+      }
+      if (fly.id === 'poison') {
+        playSound('eatPoison');
+        return;
+      }
+      if (fly.id === 'spiral') {
+        playSound('eatSpiral');
+        return;
+      }
+      if (fly.id === 'letter') {
+        playSound('eatLetter');
+        return;
+      }
+      if (fly.id === 'medicinal') {
+        playSound('eatMedicinal');
+        return;
+      }
+      playSound('eat');
+    }
+
+    function startBitMusic() {
+      unlockAudio();
+      if (!audioCtx) return;
+      const nextMode = state.mode === MODE.WIN ? 'WIN' : 'GAME';
+      const nextTempo = nextMode === 'WIN' ? music.winTempoMs : music.tempoMs;
+      if (music.timer && music.mode === nextMode) return;
+      if (music.timer) {
+        window.clearInterval(music.timer);
+        music.timer = null;
+      }
+      music.mode = nextMode;
+      music.step = 0;
+      music.timer = window.setInterval(() => {
+        if (![MODE.START, MODE.PLAYING, MODE.WIN].includes(state.mode)) return;
+        const liveMode = state.mode === MODE.WIN ? 'WIN' : 'GAME';
+        if (liveMode !== music.mode) {
+          window.clearInterval(music.timer);
+          music.timer = null;
+          startBitMusic();
+          return;
+        }
+        if (state.mode === MODE.WIN) {
+          const i = music.step % music.winLead.length;
+          const j = music.step % music.winBass.length;
+          const s = music.step % music.winSpark.length;
+          if (music.step % 2 === 0) {
+            playBitNote(music.winLead[i], 0.19, 0.014, 'square');
+          }
+          if (music.step % 4 === 0) {
+            playBitNote(music.winBass[j], 0.24, 0.01, 'triangle');
+          }
+          if (music.step % 8 === 2) {
+            playBitNote(music.loveLead[i % music.loveLead.length], 0.12, 0.008, 'triangle');
+          }
+          if (music.step % 8 === 6) {
+            playBitNote(music.winSpark[s], 0.08, 0.007, 'square');
+          }
+          if (music.step % 16 === 10) {
+            playBitNote(music.loveLead[i] * 1.25, 0.11, 0.006, 'triangle');
+          }
+        } else {
+          const i = music.step % music.lead.length;
+          const j = music.step % music.bass.length;
+          playBitNote(music.lead[i], 0.1, 0.018, 'square');
+          if (music.step % 2 === 0) {
+            playBitNote(music.bass[j], 0.15, 0.012, 'triangle');
+          }
+          if (music.step % 8 === 4) {
+            playBitNote(music.lead[i] * 2, 0.05, 0.01, 'square');
+          }
+        }
+        music.step += 1;
+      }, nextTempo);
+    }
+
+    function playSound(kind) {
+      if (!audioCtx) return;
+      if (kind === 'shoot') {
+        beep({ type: 'square', from: 360, to: 170, duration: 0.07, gain: 0.06 });
+      } else if (kind === 'eat') {
+        beep({ type: 'square', from: 1300, to: 1700, duration: 0.06, gain: 0.05 });
+        window.setTimeout(() => beep({ type: 'square', from: 1700, to: 2100, duration: 0.05, gain: 0.04 }), 30);
+      } else if (kind === 'eatGrasshopper') {
+        beep({ type: 'square', from: 760, to: 980, duration: 0.05, gain: 0.046 });
+        window.setTimeout(() => beep({ type: 'square', from: 980, to: 1360, duration: 0.06, gain: 0.042 }), 28);
+      } else if (kind === 'eatFirefly') {
+        beep({ type: 'triangle', from: 900, to: 1220, duration: 0.06, gain: 0.042 });
+        window.setTimeout(() => beep({ type: 'triangle', from: 1220, to: 1640, duration: 0.05, gain: 0.038 }), 24);
+        window.setTimeout(() => beep({ type: 'square', from: 1640, to: 1900, duration: 0.04, gain: 0.03 }), 58);
+      } else if (kind === 'eatPoison') {
+        beep({ type: 'square', from: 640, to: 560, duration: 0.05, gain: 0.042 });
+        window.setTimeout(() => beep({ type: 'square', from: 560, to: 720, duration: 0.06, gain: 0.036 }), 36);
+      } else if (kind === 'eatSpiral') {
+        beep({ type: 'square', from: 480, to: 760, duration: 0.05, gain: 0.045 });
+        window.setTimeout(() => beep({ type: 'square', from: 760, to: 1120, duration: 0.05, gain: 0.04 }), 34);
+        window.setTimeout(() => beep({ type: 'triangle', from: 1120, to: 1380, duration: 0.06, gain: 0.032 }), 68);
+      } else if (kind === 'eatLetter') {
+        beep({ type: 'square', from: 1046.5, to: 1318.51, duration: 0.06, gain: 0.048 });
+        window.setTimeout(() => beep({ type: 'triangle', from: 1318.51, to: 1567.98, duration: 0.07, gain: 0.036 }), 36);
+      } else if (kind === 'eatMedicinal') {
+        beep({ type: 'triangle', from: 660, to: 784, duration: 0.08, gain: 0.046 });
+        window.setTimeout(() => beep({ type: 'triangle', from: 784, to: 988, duration: 0.09, gain: 0.038 }), 40);
+      } else if (kind === 'bomb') {
+        beep({ type: 'sawtooth', from: 260, to: 80, duration: 0.26, gain: 0.08 });
+      } else if (kind === 'level') {
+        const notes = [392, 523.25, 659.25, 880];
+        notes.forEach((n, i) => {
+          window.setTimeout(() => beep({ type: 'square', from: n, to: n * 1.01, duration: 0.1, gain: 0.06 }), i * 65);
+        });
+      } else if (kind === 'sweep') {
+        beep({ type: 'triangle', from: 430, to: 1100, duration: 0.18, gain: 0.06 });
+      } else if (kind === 'poison') {
+        beep({ type: 'square', from: 310, to: 240, duration: 0.2, gain: 0.05 });
+      } else if (kind === 'spiral') {
+        beep({ type: 'square', from: 520, to: 980, duration: 0.15, gain: 0.05 });
+      } else if (kind === 'medicine') {
+        beep({ type: 'triangle', from: 680, to: 980, duration: 0.12, gain: 0.05 });
+      } else if (kind === 'love') {
+        const notes = [523.25, 659.25, 783.99, 1046.5];
+        notes.forEach((n, i) => {
+          window.setTimeout(() => beep({ type: 'square', from: n, to: n * 1.02, duration: 0.12, gain: 0.055 }), i * 90);
+        });
+      } else if (kind === 'bumpBlue') {
+        beep({ type: 'square', from: 240, to: 170, duration: 0.08, gain: 0.055 });
+      } else if (kind === 'bumpChameleon') {
+        beep({ type: 'square', from: 300, to: 210, duration: 0.09, gain: 0.055 });
+      } else if (kind === 'bullet') {
+        beep({ type: 'triangle', from: 720, to: 520, duration: 0.07, gain: 0.045 });
+      } else if (kind === 'hurt') {
+        beep({ type: 'sawtooth', from: 220, to: 110, duration: 0.14, gain: 0.06 });
+      } else if (kind === 'freeze') {
+        beep({ type: 'triangle', from: 760, to: 980, duration: 0.08, gain: 0.045 });
+        window.setTimeout(() => beep({ type: 'triangle', from: 980, to: 1200, duration: 0.07, gain: 0.04 }), 36);
+      } else if (kind === 'lightning') {
+        beep({ type: 'sawtooth', from: 1100, to: 260, duration: 0.06, gain: 0.045 });
+        window.setTimeout(() => beep({ type: 'square', from: 260, to: 120, duration: 0.08, gain: 0.03 }), 16);
+      }
+    }
+
+    function clamp(value, min, max) {
+      return Math.max(min, Math.min(max, value));
+    }
+
+    function frogX() {
+      return state.cx + state.frog.ox;
+    }
+
+    function frogY() {
+      return state.cy + state.frog.oy - state.frog.jumpZ;
+    }
+
+    function normalizeAngle(rad) {
+      let a = rad;
+      while (a > Math.PI) a -= Math.PI * 2;
+      while (a < -Math.PI) a += Math.PI * 2;
+      return a;
+    }
+
+    function lerpAngle(current, target, alpha) {
+      const diff = normalizeAngle(target - current);
+      return current + diff * alpha;
+    }
+
+    function distPointToSegment(px, py, ax, ay, bx, by) {
+      const abx = bx - ax;
+      const aby = by - ay;
+      const ab2 = abx * abx + aby * aby;
+      if (ab2 <= 0.00001) return Math.hypot(px - ax, py - ay);
+      const apx = px - ax;
+      const apy = py - ay;
+      const t = clamp((apx * abx + apy * aby) / ab2, 0, 1);
+      const cx = ax + abx * t;
+      const cy = ay + aby * t;
+      return Math.hypot(px - cx, py - cy);
+    }
+
+    function getEndingTongueBases() {
+      return {
+        leftX: state.cx - 120,
+        leftY: state.cy + 24,
+        rightX: state.cx + 120,
+        rightY: state.cy + 24
+      };
+    }
+
+    function getEndingTongueTip(tongue, baseX, baseY) {
+      return {
+        x: baseX + Math.cos(tongue.angle) * tongue.len,
+        y: baseY + Math.sin(tongue.angle) * tongue.len
+      };
+    }
+
+    function getEndingStarryBlend() {
+      const cycleS = 28;
+      const t = state.ending.timer % cycleS;
+      if (t < 7) return 0;
+      if (t < 11) return (t - 7) / 4;
+      if (t < 17) return 1;
+      if (t < 21) return 1 - ((t - 17) / 4);
+      return 0;
+    }
+
+    function getEndingScene() {
+      return getEndingStarryBlend() >= 0.5 ? 'STARRY' : 'HEARTS';
+    }
+
+    function getEndingLayout() {
+      const bases = getEndingTongueBases();
+      return {
+        leftX: bases.leftX,
+        rightX: bases.rightX,
+        leftY: bases.leftY - 10,
+        rightY: bases.rightY - 10,
+        titleY: state.cy + 136
+      };
+    }
+
+    function mixHexColors(a, b, t) {
+      const blend = clamp(t, 0, 1);
+      const parse = (hex) => {
+        const clean = hex.replace('#', '');
+        return {
+          r: parseInt(clean.slice(0, 2), 16),
+          g: parseInt(clean.slice(2, 4), 16),
+          b: parseInt(clean.slice(4, 6), 16)
+        };
+      };
+      const from = parse(a);
+      const to = parse(b);
+      const r = Math.round(from.r + (to.r - from.r) * blend);
+      const g = Math.round(from.g + (to.g - from.g) * blend);
+      const bVal = Math.round(from.b + (to.b - from.b) * blend);
+      return `rgb(${r}, ${g}, ${bVal})`;
+    }
+
+    function glyphForAngle(angle) {
+      const a = normalizeAngle(angle);
+      if (Math.abs(a) < Math.PI / 8 || Math.abs(a) > (Math.PI * 7) / 8) return '=';
+      if (a > Math.PI / 8 && a < (Math.PI * 3) / 8) return '\\';
+      if (a > (Math.PI * 3) / 8 && a < (Math.PI * 5) / 8) return '|';
+      if (a > (Math.PI * 5) / 8 && a < (Math.PI * 7) / 8) return '/';
+      if (a < -Math.PI / 8 && a > -(Math.PI * 3) / 8) return '/';
+      if (a < -(Math.PI * 3) / 8 && a > -(Math.PI * 5) / 8) return '|';
+      if (a < -(Math.PI * 5) / 8 && a > -(Math.PI * 7) / 8) return '\\';
+      return '=';
+    }
+
+    function getLevelConfig(level) {
+      const idx = clamp(level - 1, 0, LEVELS.length - 1);
+      return LEVELS[idx];
+    }
+
+    function weightedPick(pool) {
+      let total = 0;
+      for (const k of Object.keys(pool)) total += pool[k];
+      if (total <= 0) return 'normal';
+      const roll = Math.random() * total;
+      let acc = 0;
+      for (const k of Object.keys(pool)) {
+        acc += pool[k];
+        if (roll <= acc) return k;
+      }
+      return 'normal';
+    }
+
+    function createBackground() {
+      state.bgPattern = [];
+      const amount = Math.max(100, Math.floor((state.width * state.height) / 13000));
+      for (let i = 0; i < amount; i++) {
+        state.bgPattern.push({
+          x: Math.random() * state.width,
+          y: Math.random() * state.height,
+          drift: 0.2 + Math.random() * 1.2
+        });
+      }
+    }
+
+    function pickQuestLetter() {
+      const target = state.quest.target;
+      const expected = target[state.quest.progress] || target[0];
+      if (Math.random() < 0.68) return expected;
+      const alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+      const source = `${target}${alphabet}`;
+      return source[Math.floor(Math.random() * source.length)];
+    }
+
+    class Fly {
+      constructor(typeId, letter = '') {
+        this.id = typeId;
+        this.def = FLY_DEFS[typeId];
+        this.letter = letter;
+        this.x = 0;
+        this.y = 0;
+        this.heading = 0;
+        this.time = Math.random() * 20;
+        this.wiggle = Math.random() * Math.PI * 2;
+        this.color = this.def.color;
+        this.points = this.def.points;
+        this.radius = this.def.radius;
+        const speedByType = {
+          normal: [1.05, 1.22, 0.012],
+          grasshopper: [1.2, 1.45, 0.014],
+          bomb: [0.78, 0.95, 0.01],
+          firefly: [0.98, 1.15, 0.012],
+          poison: [1.02, 1.24, 0.013],
+          spiral: [1.1, 1.34, 0.014],
+          letter: [1.05, 1.22, 0.012],
+          medicinal: [0.95, 1.12, 0.011]
+        };
+        const [sMin, sMax, lvlGain] = speedByType[this.id] || [1, 1.2, 0.012];
+        this.speed = sMin + Math.random() * (sMax - sMin) + state.level * lvlGain;
+        this.burstTimer = 0.25 + Math.random() * 0.4;
+        this.bursting = false;
+        this.pauseTimer = 0;
+        this.orbit = Math.random() * Math.PI * 2;
+        this.spin = Math.random() * Math.PI * 2;
+        this.orbitEligible = true;
+        this.orbitDelay = state.level <= 1 ? (1.7 + Math.random() * 1.1) : (0.12 + Math.random() * 0.38);
+        this.orbitRadius = 90 + Math.random() * 130;
+        this.orbitTurn = (Math.random() > 0.5 ? 1 : -1) * (0.9 + Math.random() * 1.4);
+        this.orbitWeight = 0.82 + Math.random() * 0.42;
+        this.orbitDiveClock = 1.6 + Math.random() * 2.2;
+        this.orbitDiveBoost = 0;
+        this.wanderX = Math.random() * state.width;
+        this.wanderY = Math.random() * state.height;
+        this.wanderTimer = 0.7 + Math.random() * 1.9;
+        this.camouflageEnabled = state.level >= 11 && ['normal', 'grasshopper', 'firefly', 'poison'].includes(this.id) && Math.random() < 0.2;
+        this.camouflaged = false;
+        this.camouflageTimer = 1.4 + Math.random() * 1.6;
+
+        this.x = Math.random() * state.width;
+        this.y = Math.random() * state.height;
+        this.heading = Math.random() * Math.PI * 2;
+      }
+
+      update(dt) {
+        this.time += dt;
+        const aiFlySpeedScale = state.aiDirector.runtime.flySpeedScale;
+        const aiFrogPullScale = state.aiDirector.runtime.flyFrogPullScale;
+        if (this.camouflageEnabled) {
+          this.camouflageTimer -= dt;
+          if (this.camouflageTimer <= 0) {
+            this.camouflaged = !this.camouflaged;
+            this.camouflageTimer = this.camouflaged ? (1.0 + Math.random() * 0.9) : (1.6 + Math.random() * 1.8);
+          }
+        }
+        this.wanderTimer -= dt;
+        if (this.wanderTimer <= 0) {
+          const frogChance = clamp((0.035 + state.level * 0.006) * aiFrogPullScale, 0.015, 0.22);
+          if (Math.random() < frogChance) {
+            this.wanderX = frogX() + (Math.random() - 0.5) * 420;
+            this.wanderY = frogY() + (Math.random() - 0.5) * 340;
+          } else {
+            this.wanderX = Math.random() * state.width;
+            this.wanderY = Math.random() * state.height;
+          }
+          this.wanderTimer = 1.15 + Math.random() * 2.6;
+        }
+        const targetAngle = Math.atan2(this.wanderY - this.y, this.wanderX - this.x);
+
+        if (this.id === 'normal') {
+          const lazyTarget = targetAngle + Math.sin(this.time * 0.85 + this.wiggle) * 0.45;
+          this.heading = lerpAngle(this.heading, lazyTarget, 0.018);
+          const drift = Math.sin(this.time * 5.2 + this.wiggle) * 1.0;
+          const forward = this.speed * aiFlySpeedScale * 47 * dt;
+          this.x += Math.cos(this.heading) * forward + Math.cos(this.heading + Math.PI / 2) * drift;
+          this.y += Math.sin(this.heading) * forward + Math.sin(this.heading + Math.PI / 2) * drift;
+        } else if (this.id === 'grasshopper') {
+          this.burstTimer -= dt;
+          if (this.burstTimer <= 0) {
+            this.bursting = !this.bursting;
+            this.burstTimer = this.bursting ? 0.18 + Math.random() * 0.07 : 0.34 + Math.random() * 0.22;
+            if (this.bursting) {
+              const tx = this.wanderX + (Math.random() - 0.5) * 120;
+              const ty = this.wanderY + (Math.random() - 0.5) * 110;
+              this.heading = Math.atan2(ty - this.y, tx - this.x);
+            }
+          }
+          const factor = this.bursting ? 2.0 : 0.24;
+          const hopSway = Math.sin(this.time * 13 + this.wiggle) * (this.bursting ? 1.2 : 0.35);
+          this.x += Math.cos(this.heading) * this.speed * aiFlySpeedScale * 52 * dt * factor + Math.cos(this.heading + Math.PI / 2) * hopSway;
+          this.y += Math.sin(this.heading) * this.speed * aiFlySpeedScale * 52 * dt * factor + Math.sin(this.heading + Math.PI / 2) * hopSway;
+        } else if (this.id === 'bomb') {
+          this.heading = lerpAngle(this.heading, targetAngle, 0.022);
+          const hover = Math.sin(this.time * 2.6 + this.wiggle) * 0.42;
+          const drift = this.speed * aiFlySpeedScale * 36 * dt;
+          this.x += Math.cos(this.heading + hover) * drift;
+          this.y += Math.sin(this.heading - hover) * drift + Math.sin(this.time * 3.2 + this.wiggle) * 0.35;
+        } else if (this.id === 'firefly') {
+          this.orbit += dt * (1.4 + this.speed * aiFlySpeedScale * 0.55);
+          if (Math.random() < 0.008) this.pauseTimer = 0.12 + Math.random() * 0.16;
+          if (this.pauseTimer > 0) {
+            this.pauseTimer -= dt;
+            this.x += Math.cos(this.orbit * 2.2) * 0.45;
+            this.y += Math.sin(this.orbit * 2.2) * 0.45;
+          } else {
+            const target = targetAngle + Math.sin(this.orbit * 0.8) * 0.65;
+            this.heading = lerpAngle(this.heading, target, 0.03);
+            const side = Math.sin(this.orbit * 2.4) * 1.5;
+            const forward = this.speed * aiFlySpeedScale * 42 * dt;
+            this.x += Math.cos(this.heading) * forward + Math.cos(this.heading + Math.PI / 2) * side;
+            this.y += Math.sin(this.heading) * forward + Math.sin(this.heading + Math.PI / 2) * side;
+          }
+        } else if (this.id === 'poison') {
+          if (Math.random() < 0.03) {
+            this.heading += (Math.random() - 0.5) * 0.9;
+          }
+          const target = targetAngle + Math.sin(this.time * 2.3 + this.wiggle) * 0.92;
+          this.heading = lerpAngle(this.heading, target, 0.024);
+          const zig = Math.sin(this.time * 8 + this.wiggle) * 1.2;
+          const forward = this.speed * aiFlySpeedScale * 45 * dt;
+          this.x += Math.cos(this.heading) * forward + Math.cos(this.heading + Math.PI / 2) * zig;
+          this.y += Math.sin(this.heading) * forward + Math.sin(this.heading + Math.PI / 2) * zig;
+        } else if (this.id === 'spiral') {
+          this.spin += dt * 3.8;
+          const target = targetAngle + Math.sin(this.spin * 0.5) * 0.34;
+          this.heading = lerpAngle(this.heading, target, 0.032);
+          const swirlR = 2 + Math.sin(this.spin * 2.1) * 1.8;
+          const forward = this.speed * aiFlySpeedScale * 47 * dt;
+          this.x += Math.cos(this.heading) * forward + Math.cos(this.spin) * swirlR;
+          this.y += Math.sin(this.heading) * forward + Math.sin(this.spin) * swirlR;
+        } else if (this.id === 'letter') {
+          this.orbit += dt * 1.25;
+          const target = targetAngle + Math.sin(this.orbit * 0.9) * 0.22;
+          this.heading = lerpAngle(this.heading, target, 0.02);
+          const calm = Math.sin(this.orbit * 1.4) * 0.8;
+          const forward = this.speed * aiFlySpeedScale * 40 * dt;
+          this.x += Math.cos(this.heading) * forward + Math.cos(this.heading + Math.PI / 2) * calm;
+          this.y += Math.sin(this.heading) * forward + Math.sin(this.heading + Math.PI / 2) * calm;
+        } else if (this.id === 'medicinal') {
+          this.orbit += dt * 1.35;
+          const target = targetAngle + Math.cos(this.orbit * 0.6) * 0.35;
+          this.heading = lerpAngle(this.heading, target, 0.024);
+          const wave = Math.sin(this.orbit * 2.4) * 1.2;
+          const forward = this.speed * aiFlySpeedScale * 38 * dt;
+          this.x += Math.cos(this.heading) * forward + Math.cos(this.heading + Math.PI / 2) * wave;
+          this.y += Math.sin(this.heading) * forward + Math.sin(this.heading + Math.PI / 2) * wave;
+        }
+
+        this.x += state.weather.windX * dt * (this.id === 'grasshopper' ? 0.08 : 0.12);
+
+        if (this.x < -180 || this.x > state.width + 180 || this.y < -180 || this.y > state.height + 180) {
+          this.wanderX = Math.random() * state.width;
+          this.wanderY = Math.random() * state.height;
+          this.heading = Math.atan2(this.wanderY - this.y, this.wanderX - this.x);
+        }
+
+        this.applyStrategicOrbit(dt);
+
+        const awayX = this.x - frogX();
+        const awayY = this.y - frogY();
+        const frogDist = Math.hypot(awayX, awayY);
+        if (frogDist < 90 && frogDist > 0.001 && Math.random() < 0.3) {
+          const push = (90 - frogDist) * 0.03;
+          this.x += (awayX / frogDist) * push;
+          this.y += (awayY / frogDist) * push;
+        }
+      }
+
+      applyStrategicOrbit(dt) {
+        // Keep wide-screen spread with slight turbulence; avoid constant frog circling.
+        const edge = 44;
+        if (this.x < edge) this.x += (edge - this.x) * dt * 1.2;
+        if (this.x > state.width - edge) this.x -= (this.x - (state.width - edge)) * dt * 1.2;
+        if (this.y < edge) this.y += (edge - this.y) * dt * 1.2;
+        if (this.y > state.height - edge) this.y -= (this.y - (state.height - edge)) * dt * 1.2;
+        const n = Math.sin(this.time * 3.8 + this.wiggle) * 0.5;
+        this.x += Math.cos(this.heading + Math.PI / 2) * n;
+        this.y += Math.sin(this.heading + Math.PI / 2) * n;
+      }
+
+      draw() {
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.font = '700 20px "Courier Prime", monospace';
+
+        if (this.camouflaged) {
+          ctx.save();
+          const trailX = Math.cos(this.heading) * 12;
+          const trailY = Math.sin(this.heading) * 12;
+          ctx.globalAlpha = 0.52;
+          ctx.fillStyle = '#e4f7ff';
+          ctx.fillText('. . .', this.x, this.y);
+          ctx.globalAlpha = 0.26;
+          ctx.fillText('. .', this.x - trailX, this.y - trailY);
+          ctx.restore();
+          return;
+        }
+
+        if (this.id === 'normal') {
+          ctx.fillStyle = this.color;
+          const wings = state.frame % 10 < 5 ? '~' : '-';
+          ctx.fillText(`${wings}${this.def.glyph}${wings}`, this.x, this.y);
+          return;
+        }
+
+        if (this.id === 'grasshopper') {
+          ctx.fillStyle = this.color;
+          const body = this.bursting ? '/h\\' : '-h-';
+          ctx.fillText(body, this.x, this.y);
+          return;
+        }
+
+        if (this.id === 'bomb') {
+          ctx.fillStyle = state.frame % 20 < 10 ? '#ff7575' : '#ffcaca';
+          const center = state.frame % 12 < 6 ? '*' : 'X';
+          ctx.fillText(`[${center}]`, this.x, this.y);
+          return;
+        }
+
+        if (this.id === 'firefly') {
+          ctx.fillStyle = state.frame % 16 < 8 ? '#fff8a8' : '#ffe867';
+          ctx.fillText(`{${state.frame % 16 < 8 ? 'o' : '*'}}`, this.x, this.y);
+          return;
+        }
+
+        if (this.id === 'poison') {
+          ctx.fillStyle = this.color;
+          ctx.fillText(state.frame % 14 < 7 ? '!p!' : ':p:', this.x, this.y);
+          return;
+        }
+
+        if (this.id === 'spiral') {
+          ctx.fillStyle = this.color;
+          const chars = ['@', '&', '8', '@'];
+          ctx.fillText(`${chars[state.frame % chars.length]}${chars[(state.frame + 1) % chars.length]}`, this.x, this.y);
+          return;
+        }
+
+        if (this.id === 'letter') {
+          ctx.fillStyle = '#e6f5ff';
+          ctx.fillText(`[${this.letter}]`, this.x, this.y);
+          return;
+        }
+
+        if (this.id === 'medicinal') {
+          ctx.fillStyle = '#ffd95a';
+          ctx.fillText('(', this.x - 10, this.y);
+          ctx.fillText(')', this.x + 10, this.y);
+          ctx.fillStyle = '#ff3f3f';
+          ctx.fillText('M', this.x, this.y);
+          return;
+        }
+      }
+    }
+
+    class Particle {
+      constructor(x, y, color, char, life = 0.6) {
+        this.x = x;
+        this.y = y;
+        this.color = color;
+        this.char = char;
+        const a = Math.random() * Math.PI * 2;
+        const spd = 40 + Math.random() * 120;
+        this.vx = Math.cos(a) * spd;
+        this.vy = Math.sin(a) * spd;
+        this.life = life;
+        this.max = life;
+      }
+
+      update(dt) {
+        this.x += this.vx * dt;
+        this.y += this.vy * dt;
+        this.vy += 24 * dt;
+        this.life -= dt;
+      }
+
+      draw() {
+        const alpha = Math.max(0, this.life / this.max);
+        if (alpha <= 0) return;
+        ctx.globalAlpha = alpha;
+        ctx.fillStyle = this.color;
+        ctx.font = '16px "Courier Prime", monospace';
+        ctx.fillText(this.char, this.x, this.y);
+        ctx.globalAlpha = 1;
+      }
+    }
+
+    function addFloatText(x, y, text, color = '#ffffff') {
+      state.floatTexts.push({ x, y, text, color, life: 0.95, max: 0.95, vy: -30 });
+    }
+
+    function spawnBurst(x, y, color, amount, life = 0.6) {
+      const chars = ['*', '+', '.', '!', '~', ':'];
+      for (let i = 0; i < amount; i++) {
+        state.particles.push(new Particle(x, y, color, chars[Math.floor(Math.random() * chars.length)], life));
+      }
+    }
+
+    function getVector(dir) {
+      if (dir === 'UP') return { dx: 0, dy: -1 };
+      if (dir === 'DOWN') return { dx: 0, dy: 1 };
+      if (dir === 'LEFT') return { dx: -1, dy: 0 };
+      if (dir === 'UP_RIGHT') return { dx: 0.7071, dy: -0.7071 };
+      if (dir === 'UP_LEFT') return { dx: -0.7071, dy: -0.7071 };
+      if (dir === 'DOWN_RIGHT') return { dx: 0.7071, dy: 0.7071 };
+      if (dir === 'DOWN_LEFT') return { dx: -0.7071, dy: 0.7071 };
+      return { dx: 1, dy: 0 };
+    }
+
+    function rotateDir90(dir, steps) {
+      const idx = DIRS.indexOf(dir);
+      if (idx !== -1) return DIRS[(idx + steps + DIRS.length) % DIRS.length];
+      const sidx = SHOT_DIRS.indexOf(dir);
+      if (sidx !== -1) return SHOT_DIRS[(sidx + steps * 2 + SHOT_DIRS.length) % SHOT_DIRS.length];
+      return dir;
+    }
+
+    function getOppositeDir(dir) {
+      if (dir === 'UP') return 'DOWN';
+      if (dir === 'DOWN') return 'UP';
+      if (dir === 'LEFT') return 'RIGHT';
+      return 'LEFT';
+    }
+
+    function getReverseArrowCodes(dir) {
+      const map = {
+        UP: ['ArrowDown'],
+        DOWN: ['ArrowUp'],
+        LEFT: ['ArrowRight'],
+        RIGHT: ['ArrowLeft'],
+        UP_RIGHT: ['ArrowDown', 'ArrowLeft'],
+        UP_LEFT: ['ArrowDown', 'ArrowRight'],
+        DOWN_RIGHT: ['ArrowUp', 'ArrowLeft'],
+        DOWN_LEFT: ['ArrowUp', 'ArrowRight']
+      };
+      return map[dir] || ['ArrowLeft'];
+    }
+
+    function isReversePressed(dir) {
+      const codes = getReverseArrowCodes(dir);
+      for (const c of codes) {
+        if (keysDown.has(c)) return true;
+      }
+      return false;
+    }
+
+    function getCardinalFromArrowCode(code) {
+      if (code === 'ArrowUp') return 'UP';
+      if (code === 'ArrowDown') return 'DOWN';
+      if (code === 'ArrowLeft') return 'LEFT';
+      return 'RIGHT';
+    }
+
+    function getArrowShotDirection(primaryCode) {
+      const up = keysDown.has('ArrowUp') || primaryCode === 'ArrowUp';
+      const down = keysDown.has('ArrowDown') || primaryCode === 'ArrowDown';
+      const left = keysDown.has('ArrowLeft') || primaryCode === 'ArrowLeft';
+      const right = keysDown.has('ArrowRight') || primaryCode === 'ArrowRight';
+
+      if (!(up && down) && !(left && right)) {
+        if (up && right) return 'UP_RIGHT';
+        if (up && left) return 'UP_LEFT';
+        if (down && right) return 'DOWN_RIGHT';
+        if (down && left) return 'DOWN_LEFT';
+      }
+      return getCardinalFromArrowCode(primaryCode);
+    }
+
+    function clearPendingArrowShot() {
+      if (pendingArrowTimer) {
+        clearTimeout(pendingArrowTimer);
+        pendingArrowTimer = null;
+      }
+      pendingArrowCode = '';
+    }
+
+    function queueArrowShot(primaryCode) {
+      const dir = getArrowShotDirection(primaryCode);
+      if (dir.includes('_')) {
+        clearPendingArrowShot();
+        shootTongue(dir);
+        return;
+      }
+      clearPendingArrowShot();
+      pendingArrowCode = primaryCode;
+      pendingArrowTimer = setTimeout(() => {
+        if (pendingArrowCode !== primaryCode) return;
+        pendingArrowTimer = null;
+        pendingArrowCode = '';
+        shootTongue(getArrowShotDirection(primaryCode));
+      }, 52);
+    }
+
+    function currentConfig() {
+      return getLevelConfig(state.level);
+    }
+
+    function flyUnlockLevel(id) {
+      const unlocks = {
+        normal: 1,
+        grasshopper: 2,
+        medicinal: 3,
+        bomb: 4,
+        firefly: 5,
+        poison: 6,
+        letter: 7,
+        spiral: 8
+      };
+      return unlocks[id] || 99;
+    }
+
+    function isFlyUnlocked(id, level) {
+      return level >= flyUnlockLevel(id);
+    }
+
+    function normalizePoolWeights(pool, fallback) {
+      const keys = Object.keys(FLY_DEFS);
+      const out = {};
+      let total = 0;
+      for (const k of keys) {
+        const v = Number(pool && pool[k]);
+        if (Number.isFinite(v) && v > 0) {
+          out[k] = v;
+          total += v;
+        }
+      }
+      if (total <= 0) {
+        return { ...fallback };
+      }
+      for (const k of Object.keys(out)) out[k] /= total;
+      return out;
+    }
+
+    function resetDirectorRuntime() {
+      state.aiDirector.runtime.active = false;
+      state.aiDirector.runtime.spawnCapDelta = 0;
+      state.aiDirector.runtime.spawnIntervalScale = 1;
+      state.aiDirector.runtime.spawnExtraChanceDelta = 0;
+      state.aiDirector.runtime.poolOverrides = null;
+      state.aiDirector.runtime.flySpeedScale = 1;
+      state.aiDirector.runtime.flyFrogPullScale = 1;
+      state.aiDirector.runtime.rivalSpeedScale = 1;
+      state.aiDirector.runtime.rivalAggressionScale = 1;
+      state.aiDirector.runtime.rivalCornerHopScale = 1;
+      state.aiDirector.runtime.rivalTongueRateScale = 1;
+      state.aiDirector.runtime.weatherWindScale = 1;
+      state.aiDirector.runtime.weatherLightningScale = 1;
+      state.aiDirector.runtime.weatherRainMode = 'keep';
+      state.aiDirector.runtime.weatherSnowMode = 'keep';
+      state.aiDirector.runtime.weatherHighWindMode = 'keep';
+      state.aiDirector.directive = null;
+      state.aiDirector.directiveTimer = 0;
+      state.aiDirector.lastNote = '';
+      state.aiDirector.source = 'LOCAL';
+    }
+
+    function normalizeDirectorDirective(raw) {
+      const d = raw && typeof raw === 'object' ? raw : {};
+      const duration = clamp(Number(d.duration_s || 8), 4, 18);
+      const env = d.environment || {};
+      const spawning = d.spawning || {};
+      const flies = d.flies || {};
+      const rivals = d.rivals || {};
+      const overridePool = normalizePoolWeights(spawning.pool_overrides || null, currentConfig().pool);
+      return {
+        durationS: duration,
+        note: typeof d.flavor_text === 'string' ? d.flavor_text.slice(0, 48) : '',
+        environment: {
+          windScale: clamp(Number(env.wind_scale || 1), 0.55, 1.6),
+          lightningScale: clamp(Number(env.lightning_scale || 1), 0.5, 2.1),
+          rainMode: ['keep', 'on', 'off'].includes(env.rain_mode) ? env.rain_mode : 'keep',
+          snowMode: ['keep', 'on', 'off'].includes(env.snow_mode) ? env.snow_mode : 'keep',
+          highWindMode: ['keep', 'on', 'off'].includes(env.high_wind_mode) ? env.high_wind_mode : 'keep'
+        },
+        spawning: {
+          capDelta: Math.round(clamp(Number(spawning.cap_delta || 0), -6, 6)),
+          intervalScale: clamp(Number(spawning.interval_scale || 1), 0.62, 1.65),
+          extraChanceDelta: clamp(Number(spawning.extra_chance_delta || 0), -0.25, 0.3),
+          poolOverrides: overridePool
+        },
+        flies: {
+          speedScale: clamp(Number(flies.speed_scale || 1), 0.72, 1.32),
+          frogPullScale: clamp(Number(flies.frog_pull_scale || 1), 0.5, 1.6)
+        },
+        rivals: {
+          speedScale: clamp(Number(rivals.speed_scale || 1), 0.72, 1.35),
+          aggressionScale: clamp(Number(rivals.aggression_scale || 1), 0.72, 1.5),
+          cornerHopScale: clamp(Number(rivals.corner_hop_scale || 1), 0.65, 1.6),
+          tongueRateScale: clamp(Number(rivals.tongue_rate_scale || 1), 0.65, 1.6)
+        }
+      };
+    }
+
+    function applyDirectorDirective(rawDirective, source) {
+      const d = normalizeDirectorDirective(rawDirective);
+      state.aiDirector.source = source || 'LOCAL';
+      state.aiDirector.lastNote = d.note || '';
+      state.aiDirector.directiveTimer = d.durationS;
+      state.aiDirector.directive = d;
+      state.aiDirector.runtime.active = true;
+      state.aiDirector.runtime.spawnCapDelta = d.spawning.capDelta;
+      state.aiDirector.runtime.spawnIntervalScale = d.spawning.intervalScale;
+      state.aiDirector.runtime.spawnExtraChanceDelta = d.spawning.extraChanceDelta;
+      state.aiDirector.runtime.poolOverrides = d.spawning.poolOverrides;
+      state.aiDirector.runtime.flySpeedScale = d.flies.speedScale;
+      state.aiDirector.runtime.flyFrogPullScale = d.flies.frogPullScale;
+      state.aiDirector.runtime.rivalSpeedScale = d.rivals.speedScale;
+      state.aiDirector.runtime.rivalAggressionScale = d.rivals.aggressionScale;
+      state.aiDirector.runtime.rivalCornerHopScale = d.rivals.cornerHopScale;
+      state.aiDirector.runtime.rivalTongueRateScale = d.rivals.tongueRateScale;
+      state.aiDirector.runtime.weatherWindScale = d.environment.windScale;
+      state.aiDirector.runtime.weatherLightningScale = d.environment.lightningScale;
+      state.aiDirector.runtime.weatherRainMode = d.environment.rainMode;
+      state.aiDirector.runtime.weatherSnowMode = d.environment.snowMode;
+      state.aiDirector.runtime.weatherHighWindMode = d.environment.highWindMode;
+    }
+
+    function buildLocalDirectorDirective() {
+      const pressure = clamp((state.score / Math.max(1, state.levelGoal)) * 0.5 + state.level * 0.06, 0, 1.8);
+      const swarmMood = Math.sin((state.frame + state.level * 33) * 0.021);
+      const heavy = swarmMood > 0.45;
+      const safe = swarmMood < -0.45;
+      return {
+        duration_s: 7 + Math.random() * 4,
+        flavor_text: heavy ? 'SWARM SPIKE' : (safe ? 'CALM WINDOW' : 'MIXED FLOW'),
+        environment: {
+          wind_scale: heavy ? 1.25 : (safe ? 0.78 : 1),
+          lightning_scale: clamp(0.9 + pressure * 0.6, 0.6, 1.9),
+          rain_mode: state.level >= 4 && Math.random() < 0.15 ? 'on' : 'keep',
+          snow_mode: state.level >= 8 && Math.random() < 0.1 ? 'on' : 'keep',
+          high_wind_mode: heavy ? 'on' : 'keep'
+        },
+        spawning: {
+          cap_delta: heavy ? 2 : (safe ? -1 : 0),
+          interval_scale: heavy ? 0.84 : (safe ? 1.15 : 1),
+          extra_chance_delta: heavy ? 0.06 : (safe ? -0.05 : 0),
+          pool_overrides: {
+            normal: clamp(0.42 - pressure * 0.08, 0.12, 0.52),
+            grasshopper: clamp(0.16 + pressure * 0.05, 0.1, 0.25),
+            bomb: clamp(0.08 + pressure * 0.08, 0.03, 0.22),
+            firefly: clamp(0.07 + (safe ? 0.08 : 0), 0.05, 0.2),
+            poison: clamp(0.06 + pressure * 0.05, 0.03, 0.18),
+            spiral: clamp(0.08 + pressure * 0.06, 0.03, 0.24),
+            medicinal: clamp(0.06 + (safe ? 0.06 : 0), 0.04, 0.18),
+            letter: state.level >= 7 ? clamp(0.08 + (safe ? 0.04 : 0), 0.05, 0.18) : 0
+          }
+        },
+        flies: {
+          speed_scale: heavy ? 1.1 : (safe ? 0.92 : 1),
+          frog_pull_scale: heavy ? 1.18 : (safe ? 0.86 : 1)
+        },
+        rivals: {
+          speed_scale: clamp(0.96 + pressure * 0.18, 0.86, 1.3),
+          aggression_scale: clamp(0.95 + pressure * 0.24, 0.84, 1.45),
+          corner_hop_scale: heavy ? 1.16 : 0.95,
+          tongue_rate_scale: heavy ? 1.14 : 0.92
+        }
+      };
+    }
+
+    function getDirectorSnapshot() {
+      return {
+        mode: state.mode,
+        level: state.level,
+        score: state.score,
+        goal: state.levelGoal,
+        lives: state.lives,
+        combo: state.combo,
+        flies: {
+          count: state.flies.length,
+          types: state.flies.reduce((acc, f) => {
+            acc[f.id] = (acc[f.id] || 0) + 1;
+            return acc;
+          }, {})
+        },
+        effects: {
+          glow: Number(state.effects.glow.toFixed(2)),
+          poison: Number(state.effects.drunk.toFixed(2)),
+          freeze: Number(state.effects.timeFreeze.toFixed(2))
+        },
+        rivals: activeRivals().map((rv) => ({
+          type: rv.type,
+          score: rv.score,
+          health_pct: rv.maxHealth > 0 ? Number((rv.health / rv.maxHealth).toFixed(3)) : 0
+        })),
+        weather: {
+          rain: state.weather.rain,
+          snow: state.weather.snow,
+          high_wind: state.weather.highWind,
+          wind_x: Number(state.weather.windX.toFixed(2))
+        }
+      };
+    }
+
+    async function requestAIDirector() {
+      if (!state.aiDirector.enabled || state.aiDirector.inFlight || state.mode !== MODE.PLAYING) return;
+      state.aiDirector.inFlight = true;
+      try {
+        if (window.location.protocol === 'file:') throw new Error('file-mode');
+        const res = await fetch('/api/director', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ game_state: getDirectorSnapshot() })
+        });
+        if (!res.ok) throw new Error(`director-http-${res.status}`);
+        const body = await res.json();
+        applyDirectorDirective(body.directive || buildLocalDirectorDirective(), body.source || 'OPENAI');
+      } catch (err) {
+        applyDirectorDirective(buildLocalDirectorDirective(), 'LOCAL');
+      } finally {
+        state.aiDirector.inFlight = false;
+      }
+    }
+
+    function updateAIDirector(dt) {
+      if (!state.aiDirector.enabled) return;
+      if (state.mode !== MODE.PLAYING) return;
+
+      if (state.aiDirector.directiveTimer > 0) {
+        state.aiDirector.directiveTimer = Math.max(0, state.aiDirector.directiveTimer - dt);
+        if (state.aiDirector.directiveTimer <= 0) {
+          resetDirectorRuntime();
+        }
+      }
+
+      state.aiDirector.tickS -= dt;
+      if (state.aiDirector.tickS <= 0) {
+        state.aiDirector.tickS = state.aiDirector.intervalS;
+        requestAIDirector();
+      }
+    }
+
+    function effectiveSpawnInterval() {
+      return clamp(state.baseSpawnInterval * state.aiDirector.runtime.spawnIntervalScale, 0.22, 1.6);
+    }
+
+    function effectiveSpawnCap() {
+      return clamp(state.baseSpawnCap + state.aiDirector.runtime.spawnCapDelta, 5, 36);
+    }
+
+    function effectiveSpawnExtraChance() {
+      return clamp(state.baseSpawnExtraChance + state.aiDirector.runtime.spawnExtraChanceDelta, 0, 0.95);
+    }
+
+    function activeSpawnPool() {
+      const basePool = state.aiDirector.runtime.poolOverrides || currentConfig().pool;
+      const filtered = {};
+      let total = 0;
+      for (const k of Object.keys(basePool)) {
+        if (!isFlyUnlocked(k, state.level)) continue;
+        const v = Number(basePool[k]);
+        if (!Number.isFinite(v) || v <= 0) continue;
+        filtered[k] = v;
+        total += v;
+      }
+
+      if (total <= 0) return { normal: 1 };
+
+      // Competency shaping: keep level identity while adapting pressure.
+      const scoreFactor = state.levelGoal > 0 ? state.score / state.levelGoal : 0;
+      const comboFactor = state.combo > 1 ? Math.min(0.5, (state.combo - 1) * 0.06) : 0;
+      const hpFactor = state.health.maxFrog > 0 ? state.health.frog / state.health.maxFrog : 1;
+      const mastery = clamp(scoreFactor * 0.9 + comboFactor + hpFactor * 0.15, 0, 1.8);
+
+      if (mastery < 0.55) {
+        if (filtered.normal) filtered.normal *= 1.22;
+        if (filtered.medicinal) filtered.medicinal *= 1.3;
+        if (filtered.firefly) filtered.firefly *= 1.15;
+        if (filtered.bomb) filtered.bomb *= 0.72;
+        if (filtered.poison) filtered.poison *= 0.78;
+        if (filtered.spiral) filtered.spiral *= 0.84;
+      } else if (mastery > 1.05) {
+        if (filtered.grasshopper) filtered.grasshopper *= 1.12;
+        if (filtered.bomb) filtered.bomb *= 1.15;
+        if (filtered.poison) filtered.poison *= 1.12;
+        if (filtered.spiral) filtered.spiral *= 1.12;
+        if (filtered.normal) filtered.normal *= 0.86;
+      }
+
+      return normalizePoolWeights(filtered, currentConfig().pool);
+    }
+
+    function activeRivals() {
+      const list = [];
+      if (state.rival.active) list.push(state.rival);
+      if (state.rival2.active) list.push(state.rival2);
+      return list;
+    }
+
+    function getRivalCorners() {
+      const mx = 62;
+      const my = 64;
+      return [
+        { x: mx, y: my },
+        { x: state.width - mx, y: my },
+        { x: state.width - mx, y: state.height - my },
+        { x: mx, y: state.height - my }
+      ];
+    }
+
+    function snapRivalToCorner(rv, idx) {
+      const corners = getRivalCorners();
+      const c = corners[clamp(idx, 0, corners.length - 1)];
+      rv.cornerIndex = clamp(idx, 0, corners.length - 1);
+      rv.x = c.x;
+      rv.y = c.y;
+      rv.vx = 0;
+      rv.vy = 0;
+    }
+
+    function applyFrogDamage(amount, sourceLabel, color, sourceName = '') {
+      if (amount <= 0) return false;
+      if (state.effects.medicinal > 0) {
+        playSound('medicine');
+        addFloatText(frogX(), frogY() - 62, 'SHIELD BLOCK', '#d8ffe9');
+        return false;
+      }
+
+      state.health.frog = Math.max(0, state.health.frog - amount);
+      state.lives = Math.max(0, Math.ceil(state.health.frog / 20));
+      state.shakeTimer = Math.max(state.shakeTimer, 0.22);
+      state.shakePower = Math.max(state.shakePower, 7);
+      playSound('hurt');
+      if (sourceLabel) addFloatText(frogX(), frogY() - 62, sourceLabel, color || '#ffbdbd');
+
+      if (state.health.frog <= 0) {
+        const endName = sourceName || 'RIVAL';
+        state.rival.result = `${endName} DEFEATED ASCII FROG`;
+        state.rival2.result = state.rival.result;
+        state.mode = MODE.GAME_OVER;
+      }
+      updateHud();
+      return true;
+    }
+
+    function launchChameleonTongue(rv) {
+      if (!rv.active || rv.type !== 'chameleon') return;
+      if (rv.chTongue.active) return;
+      const tongueRate = state.aiDirector.runtime.rivalTongueRateScale;
+
+      const mouthX = rv.x + (rv.x < state.cx ? 10 : -10);
+      const mouthY = rv.y - 4;
+      let targetX = frogX();
+      let targetY = frogY() + 8;
+      let targetFlyIndex = -1;
+      let targetFly = null;
+
+      if (state.flies.length > 0) {
+        let best = Infinity;
+        for (let i = 0; i < state.flies.length; i++) {
+          const f = state.flies[i];
+          if (f.camouflaged) continue;
+          const d = Math.hypot(f.x - mouthX, f.y - mouthY);
+          if (d < best) {
+            best = d;
+            targetFlyIndex = i;
+            targetFly = f;
+          }
+        }
+      }
+
+      const targetFrog = !targetFly || Math.random() < clamp(0.46 * rv.aggression * state.aiDirector.runtime.rivalAggressionScale, 0.18, 0.86);
+      if (!targetFrog && targetFly) {
+        targetX = targetFly.x;
+        targetY = targetFly.y;
+      }
+
+      const dx = targetX - mouthX;
+      const dy = targetY - mouthY;
+      const dist = Math.max(1, Math.hypot(dx, dy));
+      const angle = Math.atan2(dy, dx);
+      const maxLen = Math.min(420, dist + 12);
+
+      rv.chTongue.active = true;
+      rv.chTongue.angle = angle;
+      rv.chTongue.len = 0;
+      rv.chTongue.maxLen = maxLen;
+      rv.chTongue.out = true;
+      rv.chTongue.speedOut = 920 * tongueRate;
+      rv.chTongue.speedIn = 0;
+      rv.chTongue.catchGlyph = '';
+      rv.chTongue.hitFrog = false;
+
+      if (targetFrog) {
+        rv.chTongue.hitFrog = true;
+      } else if (targetFly && targetFlyIndex >= 0) {
+        const caught = state.flies.splice(targetFlyIndex, 1)[0];
+        if (caught) {
+          rv.chTongue.catchGlyph = caught.id === 'letter' ? caught.letter : caught.def.glyph;
+          const gain = caught.id === 'bomb' ? 12 : Math.max(6, caught.points);
+          rv.score += gain;
+          spawnBurst(caught.x, caught.y, '#9fffd5', 8, 0.36);
+          addFloatText(rv.x, rv.y - 28, `${rv.name} TONGUE +${gain}`, '#b8ffe1');
+        }
+      }
+
+      rv.eatCooldown = (1.05 + Math.random() * 0.85) / tongueRate;
+    }
+
+    function updateChameleonTongue(rv, dt) {
+      if (!rv.chTongue.active) return;
+      const t = rv.chTongue;
+      if (t.out) {
+        t.speedOut = Math.max(280, t.speedOut * 0.92);
+        t.len += t.speedOut * dt;
+        if (t.len >= t.maxLen) {
+          t.len = t.maxLen;
+          t.out = false;
+          if (t.hitFrog) {
+            applyFrogDamage(state.level >= 12 ? 16 : 11, 'CHAMELEON TONGUE!', '#ffcfb6', 'CHAMELEON');
+          }
+        }
+      } else {
+        t.speedIn += 360 * dt;
+        t.len -= t.speedIn * dt;
+        if (t.len <= 0) {
+          t.len = 0;
+          t.active = false;
+          t.catchGlyph = '';
+          t.hitFrog = false;
+        }
+      }
+    }
+
+    function resetRival(rv) {
+      rv.active = false;
+      rv.type = '';
+      rv.name = '';
+      rv.x = 0;
+      rv.y = 0;
+      rv.score = 0;
+      rv.target = 0;
+      rv.health = 0;
+      rv.maxHealth = 0;
+      rv.speed = 1;
+      rv.aggression = 1;
+      rv.vx = 0;
+      rv.vy = 0;
+      rv.eatCooldown = 0;
+      rv.disturbCooldown = 0;
+      rv.hitCooldown = 0;
+      rv.cornerIndex = 0;
+      rv.cornerTimer = 0;
+      rv.chTongue.active = false;
+      rv.chTongue.angle = 0;
+      rv.chTongue.len = 0;
+      rv.chTongue.maxLen = 0;
+      rv.chTongue.out = true;
+      rv.chTongue.speedOut = 760;
+      rv.chTongue.speedIn = 0;
+      rv.chTongue.catchGlyph = '';
+      rv.chTongue.hitFrog = false;
+      rv.result = '';
+    }
+
+    function setupRival(rv, data, x, y) {
+      resetRival(rv);
+      rv.active = true;
+      rv.type = data.type;
+      rv.name = data.name;
+      rv.target = data.target;
+      rv.speed = data.speed;
+      rv.aggression = data.aggression;
+      rv.maxHealth = rv.type === 'chameleon' ? 140 : 120;
+      rv.health = rv.maxHealth;
+      rv.x = x;
+      rv.y = y;
+      if (rv.type === 'chameleon') {
+        rv.cornerIndex = Math.floor(Math.random() * 4);
+        rv.cornerTimer = 1.2 + Math.random() * 1.6;
+        snapRivalToCorner(rv, rv.cornerIndex);
+      }
+    }
+
+    function buildBar(pct, size = 14) {
+      const p = clamp(pct, 0, 1);
+      const filled = Math.round(p * size);
+      return `[${'#'.repeat(filled)}${'-'.repeat(size - filled)}] ${Math.round(p * 100)}%`;
+    }
+
+    function getLevelFocus(level) {
+      return LEVEL_FOCUS[level] || LEVEL_FOCUS[1];
+    }
+
+    function getWorldShiftLabel() {
+      const note = (state.aiDirector.lastNote || '').toUpperCase();
+      if (note.includes('CHAOS') || note.includes('SPIKE')) return 'storm rising';
+      if (note.includes('CALM') || note.includes('RECOVERY')) return 'calm pocket';
+      if (note.includes('RIVAL')) return 'rival pressure';
+      if (note.includes('FLOW')) return 'mixed current';
+      return '';
+    }
+
+    function getWorldLine() {
+      const focus = getLevelFocus(state.level);
+      const shift = getWorldShiftLabel();
+      const worldParts = [state.currentEnv.name.toLowerCase(), state.weather.baseName.toLowerCase(), focus.world];
+      if (shift) worldParts.push(shift);
+      return `WORLD: ${worldParts.join(' · ')}`;
+    }
+
+    function getObjectiveLine() {
+      if (state.mode === MODE.START) return 'OBJECTIVE: WATCH THE FIELD, THEN STRIKE WITH INTENT.';
+      if (state.level === 12 && state.finalChallenge.active) return 'OBJECTIVE: OUTLAST THE FINAL STORM AND KEEP YOUR LINE.';
+      if (state.quest.active && !state.quest.completed) {
+        return `OBJECTIVE: COMPLETE ${state.quest.label} IN ORDER.`;
+      }
+      const rivals = activeRivals();
+      if (rivals.length > 0) {
+        return `OBJECTIVE: STAY AHEAD OF ${rivals.map((rv) => rv.name.split(' ')[0]).join(' + ')} TO ${state.levelGoal}.`;
+      }
+      return `OBJECTIVE: ${getLevelFocus(state.level).objective.toUpperCase()}`;
+    }
+
+    function getFocusLine() {
+      const focus = getLevelFocus(state.level);
+      return `FOCUS: ${focus.title} · ${focus.cue.toUpperCase()}`;
+    }
+
+    function getContextLine() {
+      const rivals = activeRivals();
+      if (rivals.length > 0) {
+        return `RIVAL: ${rivals.map((rv) => `${rv.name.split(' ')[0]} ${Math.round((rv.health / Math.max(1, rv.maxHealth)) * 100)}%`).join(' | ')}`;
+      }
+      if (state.effects.timeFreeze > 0) return `STATE: TIME FREEZE ${state.effects.timeFreeze.toFixed(1)}s`;
+      if (state.effects.medicinal > 0) return `STATE: MED SHIELD+BOMB+REGEN ${state.effects.medicinal.toFixed(1)}s · X LINE`;
+      if (state.effects.glow > 0) return `STATE: GLOW ${state.effects.glow.toFixed(1)}s`;
+      if (state.effects.spiral > 0) return `STATE: SPIRAL ${state.effects.spiral.toFixed(1)}s`;
+      if (state.effects.drunk > 0) return `STATE: CONFUSED ${state.effects.drunk.toFixed(1)}s`;
+      if (state.level >= 3 && state.frog.jumpCooldown > 0) return `STATE: JUMP COOLING ${state.frog.jumpCooldown.toFixed(1)}s`;
+      return getWorldLine().toUpperCase();
+    }
+
+    function weatherForLevel(level) {
+      const table = {
+        1: { name: 'SWAMP MIRROR', wind: 0.08, rain: false, snow: false, highWind: false, lightning: 0 },
+        2: { name: 'RIPPLE WIND', wind: 0.65, rain: false, snow: false, highWind: true, lightning: 0 },
+        3: { name: 'CROSS CURRENT', wind: 0.24, rain: true, snow: false, highWind: false, lightning: 0 },
+        4: { name: 'STILL POND', wind: 0.12, rain: false, snow: false, highWind: false, lightning: 0 },
+        5: { name: 'ORDERED GLOW', wind: 0.18, rain: false, snow: true, highWind: false, lightning: 0 },
+        6: { name: 'RISING TIDE', wind: 0.42, rain: true, snow: false, highWind: true, lightning: 0 },
+        7: { name: 'MIRROR MARSH', wind: 0.2, rain: false, snow: false, highWind: false, lightning: 0 },
+        8: { name: 'MEMORY FOG', wind: 0.34, rain: false, snow: true, highWind: true, lightning: 0 },
+        9: { name: 'DOUBLE CURRENT', wind: 0.52, rain: true, snow: false, highWind: true, lightning: 0.0015 },
+        10: { name: 'FALSE CALM', wind: 0.36, rain: true, snow: false, highWind: false, lightning: 0.0034 },
+        11: { name: 'DUEL MARSH', wind: 0.24, rain: true, snow: false, highWind: true, lightning: 0.0044 },
+        12: { name: 'FINAL CORRIDOR', wind: 0.44, rain: false, snow: true, highWind: true, lightning: 0.0052 }
+      };
+      return table[level] || table[1];
+    }
+
+    function setupWeather() {
+      const w = weatherForLevel(state.level);
+      state.weather.baseName = w.name;
+      state.weather.baseWind = w.wind;
+      state.weather.baseRain = w.rain;
+      state.weather.baseSnow = w.snow;
+      state.weather.baseHighWind = w.highWind;
+      state.weather.baseLightningChance = w.lightning || 0;
+      state.weather.name = w.name;
+      state.weather.windX = w.wind * 120;
+      state.weather.rain = w.rain;
+      state.weather.snow = w.snow;
+      state.weather.highWind = w.highWind;
+      state.weather.lightningChance = w.lightning || 0;
+      state.weather.lightningTimer = 0;
+      state.weather.lightningX = state.width * 0.5;
+      state.weather.particles = [];
+      const count = w.rain ? 120 : (w.snow ? 95 : (w.highWind ? 70 : 26));
+      for (let i = 0; i < count; i++) {
+        state.weather.particles.push({
+          x: Math.random() * state.width,
+          y: Math.random() * state.height,
+          vx: (Math.random() - 0.5) * 28,
+          vy: 26 + Math.random() * 84,
+          len: 6 + Math.random() * 12
+        });
+      }
+    }
+
+    function updateHud() {
+      const focus = getLevelFocus(state.level);
+      scoreLine.textContent = `SCORE ${state.score}`;
+      levelLine.textContent = `LEVEL ${state.level} · ${focus.title}`;
+      frogHealthLine.textContent = `ASCII HP ${buildBar(state.health.frog / Math.max(1, state.health.maxFrog), 10)}`;
+
+      let progressPct = 0;
+      if (state.level === 12 && state.finalChallenge.active) {
+        progressPct = 1 - state.finalChallenge.timer / Math.max(1, state.finalChallenge.duration);
+        progressLine.textContent = `SURVIVAL ${buildBar(progressPct)}`;
+      } else {
+        const scorePct = state.levelGoal > 0 ? state.score / state.levelGoal : 1;
+        if (state.quest.active) {
+          const qp = state.quest.target.length > 0 ? state.quest.progress / state.quest.target.length : 1;
+          progressPct = Math.min(scorePct, qp);
+        } else {
+          progressPct = scorePct;
+        }
+        progressLine.textContent = `PROGRESS ${buildBar(progressPct)}`;
+      }
+
+      if (state.mode === MODE.START) statusLine.textContent = 'WATCH THE FIELD';
+      if (state.mode === MODE.PLAYING) {
+        const rivals = activeRivals();
+        if (rivals.length > 0) {
+          const rivalText = rivals.map((rv) => `${rv.name.split(' ')[0]} ${rv.score}`).join(' | ');
+          statusLine.textContent = `DUEL: YOU ${state.score} | ${rivalText}`;
+        } else {
+          const worldShift = getWorldShiftLabel();
+          statusLine.textContent = worldShift ? worldShift.toUpperCase() : `${focus.title} WINDOW`;
+        }
+      }
+      if (state.mode === MODE.LEVEL_UP) statusLine.textContent = 'LEVEL CLEAR';
+      if (state.mode === MODE.PAUSED) statusLine.textContent = 'PAUSED';
+      if (state.mode === MODE.GAME_OVER) {
+        const rivals = activeRivals();
+        const firstResult = rivals.map((rv) => rv.result).find(Boolean);
+        statusLine.textContent = firstResult || 'GAME OVER';
+      }
+      if (state.mode === MODE.WIN) statusLine.textContent = 'ASCII VICTORY';
+
+      const hideUi = state.mode === MODE.WIN;
+      hud.style.display = hideUi ? 'none' : 'grid';
+      help.style.display = hideUi ? 'none' : 'block';
+      objectiveLine.textContent = getObjectiveLine();
+      focusLine.textContent = getFocusLine().toUpperCase();
+      contextLine.textContent = getContextLine();
+      if (activeRivals().length) {
+        rivalHealthLine.textContent = `RIVAL: ${activeRivals().map((rv) => `${rv.name.split(' ')[0]} ${rv.score}/${rv.target}`).join(' | ')}`;
+      } else if (state.quest.active && !state.quest.completed) {
+        const done = state.quest.target.slice(0, state.quest.progress);
+        const rem = state.quest.target.slice(state.quest.progress);
+        rivalHealthLine.textContent = `SEQUENCE: ${done}${'_'.repeat(rem.length)}`;
+      } else if (state.level === 12 && state.finalChallenge.active) {
+        rivalHealthLine.textContent = `TIMER: ${state.finalChallenge.timer.toFixed(1)}s`;
+      } else {
+        rivalHealthLine.textContent = `FLOW: ${buildBar(progressPct, 10)}`;
+      }
+    }
+
+    function saveHighScore() {
+      if (state.score > state.highScore) {
+        state.highScore = state.score;
+        localStorage.setItem('ascii-frog-high-score', String(state.highScore));
+      }
+    }
+
+    function setLevel(level) {
+      state.level = clamp(level, 1, state.maxLevel);
+      const cfg = currentConfig();
+      state.currentEnv = environments[(state.level - 1) % environments.length];
+      state.levelGoal = cfg.goal;
+      state.baseSpawnInterval = cfg.interval;
+      state.baseSpawnCap = cfg.cap;
+      state.baseSpawnExtraChance = cfg.extraChance;
+      state.spawnInterval = cfg.interval;
+      state.spawnCap = cfg.cap;
+      state.spawnExtraChance = cfg.extraChance;
+      state.spawnClock = 0;
+      resetDirectorRuntime();
+      state.aiDirector.tickS = 0.6 + Math.random() * 0.8;
+      state.levelIntroTimer = 2.1;
+      state.levelIntroText = cfg.intro;
+      state.flies = [];
+      createBackground();
+      setupWeather();
+
+      resetRival(state.rival);
+      resetRival(state.rival2);
+      if (cfg.rival) setupRival(state.rival, cfg.rival, state.cx + 210, state.cy - 30);
+      if (cfg.rival2) setupRival(state.rival2, cfg.rival2, state.cx + 240, state.cy + 58);
+
+      if (state.level === 7) {
+        state.quest.active = true;
+        state.quest.target = 'ASCIIFROG';
+        state.quest.label = 'ASCII FROG';
+        state.quest.reward = 450;
+      } else {
+        state.quest.active = false;
+        state.quest.target = 'ASCIIFROG';
+        state.quest.label = 'ASCII FROG';
+        state.quest.reward = 450;
+      }
+      state.quest.completed = false;
+      state.quest.progress = 0;
+
+      if (state.level === 12) {
+        state.finalChallenge.active = true;
+        state.finalChallenge.duration = 30;
+        state.finalChallenge.timer = state.finalChallenge.duration;
+        state.finalChallenge.shotCooldown = 0.9;
+        state.finalChallenge.bullets = [];
+      } else {
+        state.finalChallenge.active = false;
+        state.finalChallenge.timer = 0;
+        state.finalChallenge.bullets = [];
+      }
+
+      for (let i = 0; i < cfg.opening; i++) {
+        spawnFly();
+      }
+
+      updateHud();
+    }
+
+    function resetRun() {
+      state.score = 0;
+      state.combo = 1;
+      state.comboChain = 0;
+      state.comboTimer = 0;
+      state.lives = 5;
+      state.health.frog = state.health.maxFrog;
+      state.levelPauseTimer = 0;
+      state.shakePower = 0;
+      state.shakeTimer = 0;
+      state.sweep.active = false;
+      state.sweep.timer = 0;
+      state.sweep.angle = 0;
+      state.effects.glow = 0;
+      state.effects.drunk = 0;
+      state.effects.spiral = 0;
+      state.effects.medicinal = 0;
+      state.effects.timeFreeze = 0;
+      resetDirectorRuntime();
+      state.aiDirector.tickS = 0.6;
+      resetRival(state.rival);
+      resetRival(state.rival2);
+      state.ending.hearts = [];
+      state.ending.timer = 0;
+      state.ending.leftCatchTimer = 0;
+      state.ending.rightCatchTimer = 0;
+      state.ending.leftTongue.angle = 0;
+      state.ending.leftTongue.len = 38;
+      state.ending.leftTongue.retarget = 0;
+      state.ending.leftTongue.aimAngle = 0;
+      state.ending.leftTongue.aimLen = 38;
+      state.ending.rightTongue.angle = Math.PI;
+      state.ending.rightTongue.len = 38;
+      state.ending.rightTongue.retarget = 0;
+      state.ending.rightTongue.aimAngle = Math.PI;
+      state.ending.rightTongue.aimLen = 38;
+      state.finalChallenge.active = false;
+      state.finalChallenge.timer = 0;
+      state.finalChallenge.shotCooldown = 0;
+      state.finalChallenge.bullets = [];
+      state.frog.ox = 0;
+      state.frog.oy = 0;
+      state.frog.vx = 0;
+      state.frog.vy = 0;
+      state.frog.jumpZ = 0;
+      state.frog.jumpVZ = 0;
+      state.frog.landSquash = 0;
+      state.frog.facing = 'RIGHT';
+      state.frog.jumpCooldown = 0;
+      state.particles = [];
+      state.floatTexts = [];
+      state.tongue.state = 'IDLE';
+      state.tongue.length = 0;
+      state.tongue.spinPhase = 0;
+      state.tongue.drunkShot = false;
+      state.tongue.drunkArcDir = 1;
+      state.tongue.caughtFlies = [];
+      state.medAim.active = false;
+      state.medAim.timer = 0;
+      state.medAim.fromX = 0;
+      state.medAim.fromY = 0;
+      state.medAim.toX = 0;
+      state.medAim.toY = 0;
+      state.medAim.flies = 0;
+      setLevel(1);
+      updateHud();
+    }
+
+    function resize() {
+      const dpr = Math.min(window.devicePixelRatio || 1, 2);
+      state.dpr = dpr;
+      state.width = window.innerWidth;
+      state.height = window.innerHeight;
+      state.cx = state.width * 0.5;
+      state.cy = state.height * 0.58;
+      state.tongue.baseMaxLength = Math.max(state.width, state.height) * 0.47;
+      state.tongue.maxLength = state.tongue.baseMaxLength;
+
+      canvas.width = Math.floor(state.width * dpr);
+      canvas.height = Math.floor(state.height * dpr);
+      canvas.style.width = `${state.width}px`;
+      canvas.style.height = `${state.height}px`;
+
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      ctx.imageSmoothingEnabled = false;
+      createBackground();
+      setupWeather();
+    }
+
+    function spawnFly() {
+      let picked = weightedPick(activeSpawnPool());
+      if (!isFlyUnlocked(picked, state.level)) picked = 'normal';
+      if (!FLY_DEFS[picked]) return;
+      if (picked === 'letter') {
+        state.flies.push(new Fly('letter', pickQuestLetter()));
+      } else {
+        state.flies.push(new Fly(picked));
+      }
+    }
+
+    function maybeSpawnFly(dt) {
+      state.spawnInterval = effectiveSpawnInterval();
+      state.spawnCap = effectiveSpawnCap();
+      state.spawnExtraChance = effectiveSpawnExtraChance();
+      state.spawnClock += dt;
+      if (state.flies.length >= state.spawnCap) return;
+      if (state.spawnClock < state.spawnInterval) return;
+
+      state.spawnClock = 0;
+      spawnFly();
+
+      if (Math.random() < state.spawnExtraChance && state.flies.length < state.spawnCap) {
+        spawnFly();
+      }
+
+      if (state.level >= 9 && Math.random() < 0.14 && state.flies.length < state.spawnCap) {
+        spawnFly();
+      }
+    }
+
+    function updateBackground(dt) {
+      const windInfluence = state.weather.windX * dt * 0.15;
+      for (const p of state.bgPattern) {
+        p.x += windInfluence;
+        p.y += p.drift * (11 + state.level * 1.6) * dt;
+        if (p.x > state.width + 8) p.x = -8;
+        if (p.x < -8) p.x = state.width + 8;
+        if (p.y > state.height + 10) {
+          p.y = -10;
+          p.x = Math.random() * state.width;
+        }
+      }
+    }
+
+    function updateWeather(dt) {
+      const rt = state.aiDirector.runtime;
+      const rainMode = rt.weatherRainMode;
+      const snowMode = rt.weatherSnowMode;
+      const highWindMode = rt.weatherHighWindMode;
+      const rainActive = rainMode === 'on' ? true : (rainMode === 'off' ? false : state.weather.baseRain);
+      const snowActive = snowMode === 'on' ? true : (snowMode === 'off' ? false : state.weather.baseSnow);
+      const highWindActive = highWindMode === 'on' ? true : (highWindMode === 'off' ? false : state.weather.baseHighWind);
+      state.weather.rain = rainActive;
+      state.weather.snow = snowActive;
+      state.weather.highWind = highWindActive;
+      state.weather.lightningChance = clamp(state.weather.baseLightningChance * rt.weatherLightningScale, 0, 0.02);
+      state.weather.name = state.weather.baseName;
+
+      if (state.level >= 10) {
+        const a = Math.sin(state.frame * 0.016);
+        const b = Math.cos(state.frame * 0.011 + 1.3);
+        const amp = (state.weather.highWind ? 52 : 34) * rt.weatherWindScale;
+        state.weather.windX = (a * 0.7 + b * 0.6) * amp;
+      } else {
+        const pulse = Math.sin(state.frame * 0.03) * 0.5 + Math.cos(state.frame * 0.017) * 0.35;
+        const base = state.weather.baseWind * 120 * rt.weatherWindScale;
+        state.weather.windX = base + pulse * (state.weather.highWind ? 85 : 35);
+      }
+
+      if (state.weather.lightningTimer > 0) {
+        state.weather.lightningTimer = Math.max(0, state.weather.lightningTimer - dt);
+      } else if (state.level >= 10 && Math.random() < state.weather.lightningChance) {
+        state.weather.lightningTimer = 0.14 + Math.random() * 0.08;
+        state.weather.lightningX = 50 + Math.random() * (state.width - 100);
+        playSound('lightning');
+      }
+
+      if (state.effects.timeFreeze > 0) return;
+
+      for (const p of state.weather.particles) {
+        if (state.weather.rain) {
+          p.x += (state.weather.windX * 0.5 + p.vx) * dt;
+          p.y += p.vy * 1.6 * dt;
+        } else if (state.weather.snow) {
+          p.x += (state.weather.windX * 0.36 + Math.sin((state.frame + p.len) * 0.03) * 24) * dt;
+          p.y += (18 + p.vy * 0.55) * dt;
+        } else if (state.weather.highWind) {
+          p.x += (state.weather.windX * 1.12 + p.vx * 0.6) * dt;
+          p.y += Math.sin((state.frame + p.len) * 0.03) * 6 * dt;
+        } else {
+          p.x += (state.weather.windX * 0.22 + p.vx * 0.2) * dt;
+          p.y += (9 + p.vy * 0.2) * dt;
+        }
+
+        if (p.x > state.width + 26) p.x = -26;
+        if (p.x < -26) p.x = state.width + 26;
+        if (p.y > state.height + 26) {
+          p.y = -18;
+          p.x = Math.random() * state.width;
+        }
+      }
+    }
+
+    function triggerJump(dir = state.frog.facing) {
+      if (state.mode !== MODE.PLAYING) return;
+      if (state.level < 3) return;
+      if (state.frog.jumpCooldown > 0) return;
+      const v = getVector(dir);
+      state.frog.vx += v.dx * 320;
+      state.frog.vy += v.dy * 210;
+      state.frog.jumpVZ = 560;
+      state.frog.landSquash = 0;
+      state.frog.jumpCooldown = 0.72;
+      addFloatText(frogX(), frogY() - 72, `JUMP ${dir}`, '#c8ffd8');
+      playSound('shoot');
+      updateHud();
+    }
+
+    function resolveShotDirection(dir) {
+      let shotDir = dir;
+      if (state.effects.drunk > 0) {
+        shotDir = rotateDir90(dir, Math.random() < 0.5 ? 1 : -1);
+        addFloatText(frogX(), frogY() - 54, `WOBBLE ${dir}->${shotDir}`, '#ffc6ff');
+      }
+      return shotDir;
+    }
+
+    function shootTongue(dir) {
+      if (state.mode === MODE.PAUSED || state.mode === MODE.LEVEL_UP || state.mode === MODE.GAME_OVER || state.mode === MODE.WIN) return;
+      if (state.tongue.state !== 'IDLE') return;
+
+      ensureAudio();
+      if (state.mode === MODE.START) {
+        startGameFromMenu();
+      }
+      if (state.mode !== MODE.PLAYING) return;
+
+      state.frog.facing = dir;
+      const shotDir = resolveShotDirection(dir);
+      const v = getVector(shotDir);
+
+      state.tongue.state = 'OUT';
+      state.tongue.dirName = shotDir;
+      state.tongue.dx = v.dx;
+      state.tongue.dy = v.dy;
+      state.tongue.length = 0;
+      state.tongue.outSpeed = 1380;
+      state.tongue.retractSpeed = 0;
+      state.tongue.caughtFlies = [];
+      state.tongue.maxLength = state.tongue.baseMaxLength;
+      state.tongue.drunkShot = state.effects.drunk > 0;
+      state.tongue.drunkArcDir = Math.random() < 0.5 ? -1 : 1;
+      if (state.effects.medicinal > 0) {
+        if (isReversePressed(shotDir)) {
+          state.tongue.outSpeed = 130;
+          state.tongue.maxLength = Math.max(68, state.tongue.baseMaxLength * 0.16);
+          addFloatText(frogX(), frogY() - 54, 'MED BRAKE', '#d8ffe9');
+        }
+      }
+      playSound('shoot');
+      startBitMusic();
+      updateHud();
+    }
+
+    function startGameFromMenu() {
+      ensureAudio();
+      resetRun();
+      state.mode = MODE.PLAYING;
+      startBitMusic();
+      updateHud();
+    }
+
+    function togglePause() {
+      if (state.mode === MODE.PLAYING) state.mode = MODE.PAUSED;
+      else if (state.mode === MODE.PAUSED) state.mode = MODE.PLAYING;
+      if (state.mode === MODE.PLAYING) startBitMusic();
+      updateHud();
+    }
+
+    async function toggleFullscreen() {
+      if (!document.fullscreenElement) {
+        try {
+          await document.documentElement.requestFullscreen();
+        } catch (_) {}
+      } else {
+        try {
+          await document.exitFullscreen();
+        } catch (_) {}
+      }
+      resize();
+    }
+
+    function triggerBombPenalty(fly) {
+      playSound('bomb');
+      const penalty = Math.max(80, Math.floor(state.level * 24 + state.score * 0.2));
+      state.score = Math.max(0, state.score - penalty);
+      state.combo = 1;
+      state.comboChain = 0;
+      state.comboTimer = 0;
+      state.shakeTimer = 0.62;
+      state.shakePower = 15;
+      spawnBurst(fly.x, fly.y, '#ff6767', 40, 0.8);
+      addFloatText(fly.x, fly.y - 30, `-${penalty} BOMB`, '#ff9a9a');
+      saveHighScore();
+      updateHud();
+    }
+
+    function triggerSweep(range, options = {}) {
+      state.sweep.active = true;
+      state.sweep.timer = options.duration || state.sweep.duration;
+      state.sweep.angle = options.startAngle || 0;
+      state.sweep.speed = options.speed || Math.PI * 7.2;
+      state.sweep.range = range;
+      state.sweep.protectBombs = !!options.protectBombs;
+      playSound('sweep');
+      addFloatText(frogX(), frogY() - 92, options.label || '360 SWEEP', '#d9ffb5');
+      updateHud();
+    }
+
+    function updateSweep(dt) {
+      if (!state.sweep.active) return;
+
+      state.sweep.timer -= dt;
+      state.sweep.angle += state.sweep.speed * dt;
+      if (state.sweep.timer <= 0) {
+        state.sweep.active = false;
+        state.sweep.timer = 0;
+        return;
+      }
+
+      const ox = frogX();
+      const oy = frogY() + 18;
+      const ex = ox + Math.cos(state.sweep.angle) * state.sweep.range;
+      const ey = oy + Math.sin(state.sweep.angle) * state.sweep.range;
+
+      const caught = [];
+      for (let i = state.flies.length - 1; i >= 0; i--) {
+        const f = state.flies[i];
+        const dist = distPointToSegment(f.x, f.y, ox, oy, ex, ey);
+        const threshold = f.radius + (state.effects.medicinal > 0 ? 14 : 10);
+        if (dist <= threshold) {
+          caught.push(state.flies[i]);
+          state.flies.splice(i, 1);
+        }
+      }
+
+      for (const f of caught) {
+        spawnBurst(f.x, f.y, f.color, 8, 0.4);
+        onCatch(f, f.x, f.y, { fromSweep: true, protectBombs: state.sweep.protectBombs });
+      }
+    }
+
+    function handleLetterCatch(fly) {
+      const expected = state.quest.target[state.quest.progress] || '';
+      if (fly.letter === expected) {
+        state.quest.progress += 1;
+        state.score += 100;
+        addFloatText(fly.x, fly.y - 24, `+100 ${fly.letter}`, '#ddf3ff');
+        playCatchCelebrate(fly);
+        if (state.quest.progress >= state.quest.target.length) {
+          state.quest.completed = true;
+          state.score += state.quest.reward;
+          addFloatText(state.cx, state.cy - 115, `QUEST COMPLETE +${state.quest.reward}`, '#b8f8ff');
+          spawnBurst(state.cx, state.cy, '#b8f8ff', 45, 0.9);
+          playSound('level');
+        }
+      } else {
+        state.quest.progress = Math.max(0, state.quest.progress - 1);
+        state.combo = 1;
+        state.comboChain = 0;
+        addFloatText(fly.x, fly.y - 24, `WRONG ${fly.letter}`, '#ffb6d6');
+      }
+      saveHighScore();
+      updateHud();
+    }
+
+    function onCatch(fly, x, y, options = {}) {
+      const protectBombs = !!options.protectBombs || state.effects.medicinal > 0;
+      state.comboChain += 1;
+      state.combo = Math.min(6, 1 + Math.floor(state.comboChain / 3));
+      state.comboTimer = 2.5;
+
+      if (fly.id === 'bomb') {
+        if (protectBombs) {
+          playSound('medicine');
+          state.score += 12;
+          addFloatText(x, y - 24, 'BOMB SHIELDED', '#b8ffd9');
+          saveHighScore();
+          updateHud();
+          return;
+        }
+        triggerBombPenalty(fly);
+        return;
+      }
+
+      if (fly.id === 'letter') {
+        handleLetterCatch(fly);
+        return;
+      }
+
+      if (fly.id === 'firefly') {
+        playCatchCelebrate(fly);
+        const boost = 35 * state.combo;
+        state.score += boost;
+        state.effects.glow = Math.max(state.effects.glow, 5.5);
+        state.effects.timeFreeze = Math.max(state.effects.timeFreeze, 4.6);
+        addFloatText(x, y - 20, `FIREFLY +${boost}`, '#fff9a8');
+        addFloatText(frogX(), frogY() - 92, 'TIME FREEZE!', '#c9f7ff');
+        playSound('freeze');
+        saveHighScore();
+        updateHud();
+        return;
+      }
+
+      if (fly.id === 'poison') {
+        playCatchCelebrate(fly);
+        state.effects.drunk = Math.max(state.effects.drunk, 8.5);
+        state.effects.glow = Math.max(state.effects.glow, 3.5);
+        state.score += fly.points * state.combo;
+        addFloatText(x, y - 20, 'POISON: LOOPY TONGUE', '#e8b8ff');
+        saveHighScore();
+        updateHud();
+        return;
+      }
+
+      if (fly.id === 'spiral') {
+        playCatchCelebrate(fly);
+        state.effects.spiral = Math.max(state.effects.spiral, 8.5);
+        state.score += fly.points * state.combo;
+        addFloatText(x, y - 20, 'SPIRAL DRILL ACTIVE', '#b8e7ff');
+        saveHighScore();
+        updateHud();
+        return;
+      }
+
+      if (fly.id === 'medicinal') {
+        playCatchCelebrate(fly);
+        state.effects.medicinal = Math.max(state.effects.medicinal, 10.5);
+        state.health.frog = Math.min(state.health.maxFrog, state.health.frog + 24);
+        state.lives = Math.max(0, Math.ceil(state.health.frog / 20));
+        state.score += fly.points * state.combo;
+        addFloatText(x, y - 20, 'MEDICINE: SHIELD + BOMB + REGEN', '#ffe68a');
+        saveHighScore();
+        updateHud();
+        return;
+      }
+
+      playCatchCelebrate(fly);
+      const gained = fly.points * state.combo;
+      state.score += gained;
+      addFloatText(x, y - 16, `+${gained}`, '#f0ffd8');
+      saveHighScore();
+      updateHud();
+    }
+
+    function levelReadyToAdvance() {
+      if (state.level === 12 && state.finalChallenge.active) {
+        return state.finalChallenge.timer <= 0 && state.mode === MODE.PLAYING;
+      }
+      if (state.score < state.levelGoal) return false;
+      if (state.quest.active && !state.quest.completed) return false;
+      for (const rv of activeRivals()) {
+        if (state.score <= rv.score) return false;
+      }
+      return true;
+    }
+
+    function spawnLoveHearts() {
+      state.ending.hearts = [];
+      for (let i = 0; i < 72; i++) {
+        state.ending.hearts.push({
+          x: Math.random() * state.width,
+          y: -Math.random() * state.height,
+          vy: 22 + Math.random() * 18,
+          drift: (Math.random() - 0.5) * 14,
+          target: ''
+        });
+      }
+      state.ending.timer = 0;
+      state.ending.leftCatchTimer = 0;
+      state.ending.rightCatchTimer = 0;
+      state.ending.leftTongue.angle = 0;
+      state.ending.leftTongue.len = 38;
+      state.ending.leftTongue.retarget = 0;
+      state.ending.leftTongue.aimAngle = 0;
+      state.ending.leftTongue.aimLen = 38;
+      state.ending.rightTongue.angle = Math.PI;
+      state.ending.rightTongue.len = 38;
+      state.ending.rightTongue.retarget = 0;
+      state.ending.rightTongue.aimAngle = Math.PI;
+      state.ending.rightTongue.aimLen = 38;
+    }
+
+    function triggerLevelAdvance() {
+      if (activeRivals().length > 0) {
+        for (const rv of activeRivals()) {
+          rv.result = `YOU BEAT ${rv.name}`;
+        }
+      }
+      if (state.level >= state.maxLevel) {
+        state.mode = MODE.WIN;
+        state.rival.result = '';
+        state.rival2.result = '';
+        spawnLoveHearts();
+        playSound('love');
+        startBitMusic();
+        updateHud();
+        return;
+      }
+      state.mode = MODE.LEVEL_UP;
+      state.levelPauseTimer = 1.4;
+      playSound('level');
+      spawnBurst(state.cx, state.cy, state.currentEnv.frogColor, 55, 0.9);
+      updateHud();
+    }
+
+    function cheatNextLevel() {
+      if (state.mode === MODE.START) startGameFromMenu();
+      if (state.mode !== MODE.PLAYING) return;
+      if (state.level === 12 && state.finalChallenge.active) {
+        state.finalChallenge.timer = 0;
+      } else {
+        state.score = Math.max(state.score, state.levelGoal);
+      }
+      for (const rv of activeRivals()) {
+        rv.score = Math.min(rv.score, state.score - 1);
+      }
+      if (state.quest.active && !state.quest.completed) {
+        state.quest.completed = true;
+        state.quest.progress = state.quest.target.length;
+      }
+      addFloatText(state.cx, state.cy - 120, 'CHEAT: NEXT LEVEL', '#afffe0');
+      triggerLevelAdvance();
+    }
+
+    function cheatSweep() {
+      if (state.mode === MODE.START) startGameFromMenu();
+      if (state.mode !== MODE.PLAYING) return;
+      addFloatText(state.cx, state.cy - 120, 'CHEAT: 360 SWEEP', '#a8dcff');
+      triggerSweep(430, { protectBombs: true, duration: 1.0, speed: Math.PI * 9.2, label: 'CHEAT SWEEP' });
+    }
+
+    function updateFrogMotion(dt) {
+      state.frog.jumpCooldown = Math.max(0, state.frog.jumpCooldown - dt);
+      const airborne = state.frog.jumpZ > 0 || state.frog.jumpVZ > 0;
+      const spring = airborne ? 4.2 : 6.2;
+      const drag = airborne ? 2.0 : 2.9;
+      state.frog.vx += (-state.frog.ox * spring - state.frog.vx * drag) * dt;
+      state.frog.vy += (-state.frog.oy * spring - state.frog.vy * drag) * dt;
+      state.frog.ox += state.frog.vx * dt;
+      state.frog.oy += state.frog.vy * dt;
+      if (airborne) {
+        state.frog.jumpVZ -= 1550 * dt;
+        state.frog.jumpZ += state.frog.jumpVZ * dt;
+        if (state.frog.jumpZ <= 0) {
+          state.frog.jumpZ = 0;
+          if (state.frog.jumpVZ < -200) {
+            state.frog.landSquash = 1;
+          }
+          state.frog.jumpVZ = 0;
+        }
+      }
+      state.frog.landSquash = Math.max(0, state.frog.landSquash - dt * 4.8);
+      state.frog.ox = clamp(state.frog.ox, -240, 240);
+      state.frog.oy = clamp(state.frog.oy, -180, 180);
+    }
+
+    function updateSingleRival(dt, rv) {
+      if (!rv.active) return;
+      if (state.mode !== MODE.PLAYING) return;
+      if (rv.health <= 0) return;
+      const aiSpeed = state.aiDirector.runtime.rivalSpeedScale;
+      const aiAgg = state.aiDirector.runtime.rivalAggressionScale;
+      const aiCornerHop = state.aiDirector.runtime.rivalCornerHopScale;
+      rv.eatCooldown = Math.max(0, rv.eatCooldown - dt);
+      rv.disturbCooldown = Math.max(0, rv.disturbCooldown - dt);
+      rv.hitCooldown = Math.max(0, rv.hitCooldown - dt);
+
+      if (rv.type === 'chameleon') {
+        rv.cornerTimer -= dt;
+        if (rv.cornerTimer <= 0) {
+          const next = (rv.cornerIndex + 1 + Math.floor(Math.random() * 3)) % 4;
+          snapRivalToCorner(rv, next);
+          rv.cornerTimer = (1.8 + Math.random() * 2.2) / aiCornerHop;
+          addFloatText(rv.x, rv.y - 28, 'CHAMELEON SHIFT', '#b9ffe1');
+        }
+
+        if (rv.eatCooldown <= 0 && !rv.chTongue.active) {
+          launchChameleonTongue(rv);
+        }
+        updateChameleonTongue(rv, dt);
+
+        const ux = frogX();
+        const uy = frogY();
+        const ddx = ux - rv.x;
+        const ddy = uy - rv.y;
+        const userDist = Math.hypot(ddx, ddy);
+        if (userDist < 88 && rv.disturbCooldown <= 0) {
+          rv.disturbCooldown = 0.85;
+          const shielded = state.effects.medicinal > 0;
+          const push = 150 * rv.aggression * aiAgg * (shielded ? 0.18 : 1);
+          const a = Math.atan2(ddy, ddx);
+          state.frog.vx += Math.cos(a) * push;
+          state.frog.vy += Math.sin(a) * push;
+          if (shielded) {
+            playSound('medicine');
+            addFloatText(frogX(), frogY() - 70, 'SHIELD BODY BLOCK', '#d8ffe9');
+          } else {
+            applyFrogDamage(8, 'CHAMELEON HIT!', '#ffc4b2', 'CHAMELEON');
+            playSound('bumpChameleon');
+          }
+        }
+
+        if (rv.score >= rv.target && rv.score > state.score + 20) {
+          rv.result = `${rv.name} WINS`;
+          state.mode = MODE.GAME_OVER;
+        }
+        return;
+      }
+
+      let nearest = null;
+      let nearestDist = Infinity;
+      for (let i = 0; i < state.flies.length; i++) {
+        const f = state.flies[i];
+        if (f.camouflaged) continue;
+        const dx = f.x - rv.x;
+        const dy = f.y - rv.y;
+        const d2 = dx * dx + dy * dy;
+        if (d2 < nearestDist) {
+          nearestDist = d2;
+          nearest = { fly: f, index: i, dx, dy, dist: Math.sqrt(d2) };
+        }
+      }
+
+      if (nearest) {
+        const targetAngle = Math.atan2(nearest.dy, nearest.dx);
+        const accel = (rv.type === 'chameleon' ? 240 : 180) * rv.speed * aiSpeed;
+        rv.vx += Math.cos(targetAngle) * accel * dt;
+        rv.vy += Math.sin(targetAngle) * accel * dt;
+      } else {
+        const fx = frogX();
+        const fy = frogY();
+        const angle = Math.atan2(fy - rv.y, fx - rv.x) + Math.PI / 2;
+        const accel = 95 * rv.speed * aiSpeed;
+        rv.vx += Math.cos(angle) * accel * dt;
+        rv.vy += Math.sin(angle) * accel * dt;
+      }
+
+      rv.vx *= 0.94;
+      rv.vy *= 0.94;
+      rv.x += rv.vx * dt;
+      rv.y += rv.vy * dt;
+      rv.x += state.weather.windX * dt * 0.22;
+      rv.x = clamp(rv.x, 40, state.width - 40);
+      rv.y = clamp(rv.y, 50, state.height - 50);
+
+      if (nearest && rv.eatCooldown <= 0 && nearest.dist <= (rv.type === 'chameleon' ? 34 : 30)) {
+        const f = state.flies.splice(nearest.index, 1)[0];
+        if (f) {
+          const gain = f.id === 'bomb' ? 14 : Math.max(6, f.points);
+          rv.score += gain;
+          rv.eatCooldown = rv.type === 'chameleon' ? 0.1 : 0.16;
+          spawnBurst(rv.x, rv.y, rv.type === 'chameleon' ? '#9fffd5' : '#78b7ff', 8, 0.38);
+          addFloatText(rv.x, rv.y - 26, `${rv.name} +${gain}`, rv.type === 'chameleon' ? '#9fffd5' : '#9fd0ff');
+        }
+      }
+
+      const ux = frogX();
+      const uy = frogY();
+      const ddx = ux - rv.x;
+      const ddy = uy - rv.y;
+      const userDist = Math.hypot(ddx, ddy);
+      const disturbRange = rv.type === 'chameleon' ? 95 : 78;
+      if (userDist < disturbRange && rv.disturbCooldown <= 0) {
+        const shielded = state.effects.medicinal > 0;
+        const push = (rv.type === 'chameleon' ? 220 : 160) * rv.aggression * aiAgg * (shielded ? 0.2 : 1);
+        const a = Math.atan2(ddy, ddx);
+        state.frog.vx += Math.cos(a) * push;
+        state.frog.vy += Math.sin(a) * push;
+        rv.disturbCooldown = rv.type === 'chameleon' ? 0.52 : 0.78;
+        if (shielded) {
+          playSound('medicine');
+          addFloatText(frogX(), frogY() - 78, 'SHIELD BUMP BLOCK', '#d8ffe9');
+        } else {
+          playSound(rv.type === 'chameleon' ? 'bumpChameleon' : 'bumpBlue');
+          addFloatText(frogX(), frogY() - 82, `${rv.name} BUMP!`, '#ffcfb6');
+          applyFrogDamage(6, `${rv.name} BUMP!`, '#ffcfb6', rv.name);
+        }
+      }
+
+      if (rv.score >= rv.target && rv.score > state.score + 20) {
+        rv.result = `${rv.name} WINS`;
+        state.mode = MODE.GAME_OVER;
+      }
+    }
+
+    function updateRivals(dt) {
+      updateSingleRival(dt, state.rival);
+      updateSingleRival(dt, state.rival2);
+    }
+
+    function updateFinalChallenge(dt) {
+      if (!state.finalChallenge.active || state.mode !== MODE.PLAYING) return;
+      if (state.level !== 12) return;
+
+      state.finalChallenge.timer = Math.max(0, state.finalChallenge.timer - dt);
+      // Chameleon now attacks via corner tongue strikes (handled in updateSingleRival).
+      // Keep legacy bullets cleared so old state never leaks into the final challenge.
+      state.finalChallenge.bullets = [];
+    }
+
+    function getTonguePoint(distance) {
+      const tongue = state.tongue;
+      const startX = frogX();
+      const startY = frogY() + 18;
+      let x = startX + tongue.dx * distance;
+      let y = startY + tongue.dy * distance;
+
+      if (tongue.drunkShot) {
+        const half = tongue.maxLength * 0.5;
+        if (distance > half) {
+          const t = clamp((distance - half) / Math.max(1, half), 0, 1);
+          const px = -tongue.dy;
+          const py = tongue.dx;
+          const arcRadius = half * 0.42;
+          const theta = t * Math.PI * 1.35 * tongue.drunkArcDir;
+          x += px * arcRadius * (1 - Math.cos(theta));
+          y += py * arcRadius * (1 - Math.cos(theta));
+          x += tongue.dx * arcRadius * 0.35 * Math.sin(theta);
+          y += tongue.dy * arcRadius * 0.35 * Math.sin(theta);
+        }
+      }
+
+      return { x, y };
+    }
+
+    function getTongueSamplesForCollision() {
+      const samples = [];
+      const tongue = state.tongue;
+      const sticky = state.effects.medicinal > 0;
+      const step = sticky ? 10 : 16;
+
+      if (sticky) {
+        for (let d = 12; d <= tongue.length; d += step) {
+          samples.push(getTonguePoint(d));
+        }
+      }
+
+      const tip = getTonguePoint(tongue.length);
+      samples.push(tip);
+
+      if (state.effects.spiral > 0) {
+        const r = 20 + Math.abs(Math.sin(tongue.spinPhase)) * 12;
+        for (let i = 0; i < 8; i++) {
+          const a = tongue.spinPhase + (Math.PI * 2 * i) / 8;
+          samples.push({ x: tip.x + Math.cos(a) * r, y: tip.y + Math.sin(a) * r });
+        }
+      }
+
+      return samples;
+    }
+
+    function fliesCanChainTogether(a, b) {
+      if (!a || !b) return false;
+      if (a.id !== b.id) return false;
+      if (a.id === 'letter') return a.letter === b.letter;
+      return true;
+    }
+
+    function collectTongueRow(anchorFly, base, tip) {
+      if (!anchorFly) return [];
+      const abx = tip.x - base.x;
+      const aby = tip.y - base.y;
+      const segLen = Math.max(1, Math.hypot(abx, aby));
+      const segLen2 = Math.max(1, segLen * segLen);
+      const gapRatio = Math.min(0.24, 92 / segLen);
+      const width = anchorFly.radius + 18;
+      const projections = [];
+
+      for (const fly of state.flies) {
+        if (!fliesCanChainTogether(anchorFly, fly)) continue;
+        const apx = fly.x - base.x;
+        const apy = fly.y - base.y;
+        const t = clamp((apx * abx + apy * aby) / segLen2, -0.08, 1.08);
+        const cx = base.x + abx * t;
+        const cy = base.y + aby * t;
+        const dist = Math.hypot(fly.x - cx, fly.y - cy);
+        if (dist > width) continue;
+        projections.push({ fly, t });
+      }
+
+      projections.sort((a, b) => a.t - b.t);
+      const anchorIndex = projections.findIndex((entry) => entry.fly === anchorFly);
+      if (anchorIndex === -1) return [anchorFly];
+
+      const chain = [anchorFly];
+      let prevT = projections[anchorIndex].t;
+      for (let i = anchorIndex + 1; i < projections.length; i++) {
+        if (projections[i].t - prevT > gapRatio) break;
+        chain.push(projections[i].fly);
+        prevT = projections[i].t;
+      }
+
+      prevT = projections[anchorIndex].t;
+      for (let i = anchorIndex - 1; i >= 0; i--) {
+        if (prevT - projections[i].t > gapRatio) break;
+        chain.unshift(projections[i].fly);
+        prevT = projections[i].t;
+      }
+
+      return chain;
+    }
+
+    function getBestRowOpportunity() {
+      let best = null;
+      for (let i = 0; i < state.flies.length; i++) {
+        const a = state.flies[i];
+        for (let j = i + 1; j < state.flies.length; j++) {
+          const b = state.flies[j];
+          if (!fliesCanChainTogether(a, b)) continue;
+          const dx = b.x - a.x;
+          const dy = b.y - a.y;
+          const dist = Math.hypot(dx, dy);
+          if (dist < 70 || dist > 280) continue;
+          const dirX = dx / dist;
+          const dirY = dy / dist;
+          const chain = [a, b];
+          for (let k = 0; k < state.flies.length; k++) {
+            if (k === i || k === j) continue;
+            const f = state.flies[k];
+            if (!fliesCanChainTogether(a, f)) continue;
+            const apx = f.x - a.x;
+            const apy = f.y - a.y;
+            const along = apx * dirX + apy * dirY;
+            if (along < -20 || along > dist + 20) continue;
+            const side = Math.abs(apx * dirY - apy * dirX);
+            if (side > f.radius + 16) continue;
+            chain.push(f);
+          }
+          const unique = [...new Set(chain)];
+          const candidate = { a, b, chain: unique, dist };
+          if (!best || candidate.chain.length > best.chain.length || (candidate.chain.length === best.chain.length && candidate.dist > best.dist)) {
+            best = candidate;
+          }
+        }
+      }
+      return best;
+    }
+
+    function launchTongueVector(dx, dy, dirName, options = {}) {
+      state.tongue.state = 'OUT';
+      state.tongue.dirName = dirName;
+      state.tongue.dx = dx;
+      state.tongue.dy = dy;
+      state.tongue.length = 0;
+      state.tongue.outSpeed = options.outSpeed || 1380;
+      state.tongue.retractSpeed = 0;
+      state.tongue.caughtFlies = [];
+      state.tongue.maxLength = options.maxLength || state.tongue.baseMaxLength;
+      state.tongue.drunkShot = !!options.drunkShot;
+      state.tongue.drunkArcDir = Math.random() < 0.5 ? -1 : 1;
+    }
+
+    function triggerMedicinalLineShot() {
+      if (state.mode !== MODE.PLAYING) return;
+      if (state.effects.medicinal <= 0) return;
+      if (state.tongue.state !== 'IDLE') return;
+      const best = getBestRowOpportunity();
+      if (!best || best.chain.length < 2) {
+        addFloatText(frogX(), frogY() - 72, 'NO CLEAR LINE', '#dbeaff');
+        return;
+      }
+      const anchor = best.chain.reduce((closest, fly) => {
+        const d = Math.hypot(fly.x - frogX(), fly.y - frogY());
+        return !closest || d < closest.dist ? { fly, dist: d } : closest;
+      }, null).fly;
+      const target = best.chain.reduce((farthest, fly) => {
+        const d = Math.hypot(fly.x - frogX(), fly.y - frogY());
+        return !farthest || d > farthest.dist ? { fly, dist: d } : farthest;
+      }, null).fly;
+      const dx = target.x - frogX();
+      const dy = target.y - (frogY() + 18);
+      const dist = Math.max(1, Math.hypot(dx, dy));
+      state.frog.facing = Math.abs(dx) > Math.abs(dy) ? (dx >= 0 ? 'RIGHT' : 'LEFT') : (dy >= 0 ? 'DOWN' : 'UP');
+      state.medAim.active = true;
+      state.medAim.timer = 0.7;
+      state.medAim.fromX = anchor.x;
+      state.medAim.fromY = anchor.y;
+      state.medAim.toX = target.x;
+      state.medAim.toY = target.y;
+      state.medAim.flies = best.chain.length;
+      launchTongueVector(dx / dist, dy / dist, 'MEDLINE', {
+        outSpeed: 1500,
+        maxLength: Math.min(state.tongue.baseMaxLength, dist + 120),
+        drunkShot: false
+      });
+      playSound('medicine');
+      addFloatText((anchor.x + target.x) * 0.5, (anchor.y + target.y) * 0.5 - 22, `MED LINE x${best.chain.length}`, '#dfffd0');
+      startBitMusic();
+      updateHud();
+    }
+
+    function hitRivalWithTongue(rv, damage) {
+      if (!rv.active || rv.health <= 0) return;
+      rv.health = Math.max(0, rv.health - damage);
+      rv.hitCooldown = 0.42;
+      playSound(rv.type === 'chameleon' ? 'bumpChameleon' : 'bumpBlue');
+      spawnBurst(rv.x, rv.y, rv.type === 'chameleon' ? '#b9ffe8' : '#9ac8ff', 7, 0.32);
+      addFloatText(rv.x, rv.y - 24, `-${damage} HP`, '#ffd8b6');
+
+      if (rv.health <= 0) {
+        rv.active = false;
+        rv.vx = 0;
+        rv.vy = 0;
+        rv.result = `${rv.name} DOWN`;
+        addFloatText(rv.x, rv.y - 48, `${rv.name} DEFEATED`, '#ffe8ae');
+      }
+    }
+
+    function updateTongue(dt) {
+      const tongue = state.tongue;
+      if (tongue.state === 'IDLE') return;
+
+      if (tongue.state === 'OUT') {
+        tongue.outSpeed = Math.max(260, tongue.outSpeed * 0.9);
+        if (state.effects.medicinal > 0) {
+          if (isReversePressed(tongue.dirName || state.frog.facing)) {
+            tongue.outSpeed = Math.max(45, tongue.outSpeed * 0.34);
+            tongue.maxLength = Math.min(tongue.maxLength, Math.max(52, tongue.length + 8));
+            if (tongue.length > 20) {
+              tongue.state = 'IN';
+              tongue.retractSpeed = 300;
+            }
+          }
+        }
+        tongue.length += tongue.outSpeed * dt;
+        tongue.spinPhase += dt * (state.effects.spiral > 0 ? 20 : 8);
+
+        const sticky = state.effects.medicinal > 0;
+        const samples = getTongueSamplesForCollision();
+
+        let caughtAny = false;
+        const caughtRefs = new Set();
+        const caughtOrdered = [];
+        const base = getTonguePoint(0);
+        const tip = getTonguePoint(tongue.length);
+        for (let i = 0; i < state.flies.length; i++) {
+          const f = state.flies[i];
+          if (caughtRefs.has(f)) continue;
+          const threshold = f.radius + (state.effects.spiral > 0 ? 18 : 10) + (sticky ? 36 : 0);
+          let hit = false;
+          for (const s of samples) {
+            const dx = s.x - f.x;
+            const dy = s.y - f.y;
+            if (dx * dx + dy * dy <= threshold * threshold) {
+              hit = true;
+              break;
+            }
+          }
+          if (!hit && sticky) {
+            hit = distPointToSegment(f.x, f.y, base.x, base.y, tip.x, tip.y) <= threshold + 14;
+          }
+
+          if (hit) {
+            caughtAny = true;
+            if (sticky) {
+              caughtRefs.add(f);
+              caughtOrdered.push(f);
+            } else {
+              const row = collectTongueRow(f, base, tip);
+              for (const chainedFly of row) {
+                if (caughtRefs.has(chainedFly)) continue;
+                caughtRefs.add(chainedFly);
+                caughtOrdered.push(chainedFly);
+              }
+              break;
+            }
+          }
+        }
+
+        if (caughtOrdered.length > 0) {
+          tongue.caughtFlies.push(...caughtOrdered);
+          state.flies = state.flies.filter((fly) => !caughtRefs.has(fly));
+          if (caughtOrdered.length > 1) {
+            const rowLabel = caughtOrdered[0].id === 'letter'
+              ? `LETTER ${caughtOrdered[0].letter}`
+              : caughtOrdered[0].def.name.toUpperCase();
+            addFloatText(tip.x, tip.y - 26, `${rowLabel} ROW x${caughtOrdered.length}`, '#dfffd0');
+          }
+        }
+
+        let rivalHit = false;
+        for (const rv of activeRivals()) {
+          if (rv.hitCooldown > 0 || rv.health <= 0) continue;
+          const hitRadius = 40 + (sticky ? 20 : 0);
+          let hit = false;
+          for (const s of samples) {
+            const dx = s.x - rv.x;
+            const dy = s.y - rv.y;
+            if (dx * dx + dy * dy <= hitRadius * hitRadius) {
+              hit = true;
+              break;
+            }
+          }
+          if (!hit) {
+            hit = distPointToSegment(rv.x, rv.y, base.x, base.y, tip.x, tip.y) <= hitRadius + (sticky ? 12 : 8);
+          }
+          if (hit) {
+            hitRivalWithTongue(rv, sticky ? 20 : 14);
+            rivalHit = true;
+            if (!sticky) break;
+          }
+        }
+
+        if ((caughtAny || rivalHit) && !sticky) {
+          tongue.state = 'IN';
+          tongue.retractSpeed = 240;
+        }
+
+        if (tongue.length >= tongue.maxLength) {
+          tongue.state = 'IN';
+          tongue.retractSpeed = 220;
+        }
+      } else if (tongue.state === 'IN') {
+        tongue.retractSpeed += 320 * dt;
+        tongue.length -= tongue.retractSpeed * dt;
+
+        if (tongue.length <= 0) {
+          tongue.length = 0;
+          tongue.state = 'IDLE';
+          if (tongue.caughtFlies.length > 0) {
+            const catches = [...tongue.caughtFlies];
+            tongue.caughtFlies = [];
+            for (const c of catches) {
+              onCatch(c, frogX(), frogY() + 16);
+              spawnBurst(frogX(), frogY() + 14, c.color, 9, 0.35);
+            }
+          } else {
+            state.comboTimer = Math.max(0, state.comboTimer - 0.8);
+            if (state.comboTimer <= 0) {
+              state.combo = 1;
+              state.comboChain = 0;
+            }
+            updateHud();
+          }
+        }
+      }
+    }
+
+    function updateEffects(dt) {
+      if (state.effects.glow > 0) state.effects.glow -= dt;
+      if (state.effects.drunk > 0) state.effects.drunk -= dt;
+      if (state.effects.spiral > 0) state.effects.spiral -= dt;
+      if (state.medAim.timer > 0) {
+        state.medAim.timer = Math.max(0, state.medAim.timer - dt);
+        if (state.medAim.timer <= 0) state.medAim.active = false;
+      }
+      if (state.effects.timeFreeze > 0) {
+        state.effects.timeFreeze -= dt;
+        if (state.effects.timeFreeze < 0) state.effects.timeFreeze = 0;
+      }
+      if (state.effects.medicinal > 0) {
+        state.effects.medicinal -= dt;
+        if (state.health.frog < state.health.maxFrog) {
+          state.health.frog = Math.min(state.health.maxFrog, state.health.frog + 10 * dt);
+          state.lives = Math.max(0, Math.ceil(state.health.frog / 20));
+        }
+        if (state.effects.medicinal <= 0) {
+          state.effects.medicinal = 0;
+        }
+      }
+
+      if (state.shakeTimer > 0) {
+        state.shakeTimer -= dt;
+        if (state.shakeTimer <= 0) {
+          state.shakeTimer = 0;
+          state.shakePower = 0;
+        }
+      }
+
+      if (state.levelIntroTimer > 0) {
+        state.levelIntroTimer -= dt;
+        if (state.levelIntroTimer <= 0) state.levelIntroTimer = 0;
+      }
+    }
+
+    function update(dt) {
+      state.frame += 1;
+
+      updateBackground(dt);
+      updateWeather(dt);
+      updateEffects(dt);
+      updateFrogMotion(dt);
+
+      for (const p of state.particles) p.update(dt);
+      state.particles = state.particles.filter((p) => p.life > 0);
+
+      for (const t of state.floatTexts) {
+        t.y += t.vy * dt;
+        t.life -= dt;
+      }
+      state.floatTexts = state.floatTexts.filter((t) => t.life > 0);
+
+      if (state.mode === MODE.WIN) {
+        state.ending.timer += dt;
+        state.ending.leftCatchTimer = Math.max(0, state.ending.leftCatchTimer - dt);
+        state.ending.rightCatchTimer = Math.max(0, state.ending.rightCatchTimer - dt);
+        const starryBlend = getEndingStarryBlend();
+        const bases = getEndingTongueBases();
+        const tongueConfigs = [
+          { obj: state.ending.leftTongue, baseX: bases.leftX, baseY: bases.leftY, facing: 0, side: 'left' },
+          { obj: state.ending.rightTongue, baseX: bases.rightX, baseY: bases.rightY, facing: Math.PI, side: 'right' }
+        ];
+
+        for (const cfg of tongueConfigs) {
+          cfg.obj.retarget -= dt;
+          if (cfg.obj.retarget <= 0) {
+            cfg.obj.retarget = 0.32 + Math.random() * 0.54;
+            const preferForward = Math.random() < 0.76;
+            if (preferForward) {
+              cfg.obj.aimAngle = cfg.facing + (Math.random() - 0.5) * 1.8;
+            } else {
+              cfg.obj.aimAngle = Math.random() * Math.PI * 2;
+            }
+            cfg.obj.aimLen = 34 + Math.random() * 116;
+          }
+          const calmAngle = cfg.facing === 0 ? 0.08 : Math.PI - 0.08;
+          const calmLen = 28;
+          cfg.obj.aimAngle = lerpAngle(cfg.obj.aimAngle, calmAngle, 0.18 * starryBlend);
+          cfg.obj.aimLen += (calmLen - cfg.obj.aimLen) * 0.16 * starryBlend;
+          cfg.obj.angle = lerpAngle(cfg.obj.angle, cfg.obj.aimAngle, 0.2);
+          cfg.obj.len += (cfg.obj.aimLen - cfg.obj.len) * 0.18;
+          cfg.obj.len = clamp(cfg.obj.len, 24, 154);
+        }
+
+        const leftTip = getEndingTongueTip(state.ending.leftTongue, bases.leftX, bases.leftY);
+        const rightTip = getEndingTongueTip(state.ending.rightTongue, bases.rightX, bases.rightY);
+
+        // Keep ending catches calm: only one active target per frog at a time.
+        let leftBusy = false;
+        let rightBusy = false;
+        for (const h of state.ending.hearts) {
+          if (h.target === 'left') {
+            if (leftBusy) h.target = '';
+            else leftBusy = true;
+          } else if (h.target === 'right') {
+            if (rightBusy) h.target = '';
+            else rightBusy = true;
+          }
+        }
+
+        for (const h of state.ending.hearts) {
+          if (!h.target) {
+            const roll = Math.random();
+            if (!leftBusy && roll < 0.005 * (1 - starryBlend)) {
+              h.target = 'left';
+              leftBusy = true;
+            } else if (!rightBusy && roll > 1 - 0.005 * (1 - starryBlend)) {
+              h.target = 'right';
+              rightBusy = true;
+            }
+          }
+
+          if (h.target) {
+            if (starryBlend > 0.68 && Math.random() < 0.12 * starryBlend) {
+              h.target = '';
+            }
+            const tx = h.target === 'left' ? leftTip.x : rightTip.x;
+            const ty = h.target === 'left' ? leftTip.y : rightTip.y;
+            const dx = tx - h.x;
+            const dy = ty - h.y;
+            const dist = Math.max(1, Math.hypot(dx, dy));
+            const speed = (85 + Math.min(120, dist * 0.45)) * (1 - starryBlend * 0.82);
+            h.x += (dx / dist) * speed * dt;
+            h.y += (dy / dist) * speed * dt;
+          } else {
+            h.y += h.vy * dt * (1 - starryBlend * 0.82);
+            h.x += h.drift * dt * (1 - starryBlend * 0.45);
+            h.x += Math.sin(state.ending.timer * 0.7 + h.drift) * 7 * dt * starryBlend;
+          }
+
+          const leftLineDist = distPointToSegment(h.x, h.y, bases.leftX, bases.leftY, leftTip.x, leftTip.y);
+          const rightLineDist = distPointToSegment(h.x, h.y, bases.rightX, bases.rightY, rightTip.x, rightTip.y);
+          const leftTipDist = Math.hypot(h.x - leftTip.x, h.y - leftTip.y);
+          const rightTipDist = Math.hypot(h.x - rightTip.x, h.y - rightTip.y);
+
+          if (starryBlend < 0.45 && (leftLineDist < 8 || leftTipDist < 10)) {
+            state.ending.leftCatchTimer = 0.34;
+            h.x = Math.random() * state.width;
+            h.y = -22 - Math.random() * state.height * 0.5;
+            h.target = '';
+            leftBusy = false;
+          } else if (starryBlend < 0.45 && (rightLineDist < 8 || rightTipDist < 10)) {
+            state.ending.rightCatchTimer = 0.34;
+            h.x = Math.random() * state.width;
+            h.y = -22 - Math.random() * state.height * 0.5;
+            h.target = '';
+            rightBusy = false;
+          }
+
+          if (h.y > state.height + 20) {
+            h.y = -20;
+            h.x = Math.random() * state.width;
+            h.target = '';
+          }
+          if (h.x < -20) h.x = state.width + 20;
+          if (h.x > state.width + 20) h.x = -20;
+        }
+        return;
+      }
+
+      if (state.mode === MODE.START || state.mode === MODE.GAME_OVER || state.mode === MODE.PAUSED) {
+        return;
+      }
+
+      if (state.mode === MODE.LEVEL_UP) {
+        state.levelPauseTimer -= dt;
+        if (state.levelPauseTimer <= 0) {
+          setLevel(state.level + 1);
+          state.mode = MODE.PLAYING;
+          updateHud();
+        }
+        return;
+      }
+
+      updateAIDirector(dt);
+
+      const frozen = state.effects.timeFreeze > 0;
+      if (!frozen) {
+        maybeSpawnFly(dt);
+        for (const fly of state.flies) fly.update(dt);
+        updateRivals(dt);
+        updateFinalChallenge(dt);
+      }
+      updateSweep(dt);
+      updateTongue(dt);
+
+      if (state.comboTimer > 0) {
+        state.comboTimer -= dt;
+        if (state.comboTimer <= 0) {
+          state.comboTimer = 0;
+          state.combo = 1;
+          state.comboChain = 0;
+          updateHud();
+        }
+      }
+
+      if (levelReadyToAdvance()) {
+        triggerLevelAdvance();
+      }
+
+      updateHud();
+    }
+
+    function drawBackground() {
+      const env = state.currentEnv;
+      const gradient = ctx.createLinearGradient(0, 0, 0, state.height);
+      gradient.addColorStop(0, env.bgA);
+      gradient.addColorStop(1, env.bgB);
+      ctx.fillStyle = gradient;
+      ctx.fillRect(0, 0, state.width, state.height);
+
+      ctx.fillStyle = env.fg;
+      ctx.font = '15px "Courier Prime", monospace';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      for (const p of state.bgPattern) {
+        ctx.fillText(env.char, p.x, p.y);
+      }
+
+      ctx.fillStyle = 'rgba(0, 0, 0, 0.08)';
+      for (let y = 0; y < state.height; y += 4) {
+        ctx.fillRect(0, y, state.width, 1);
+      }
+
+      drawPatternCues();
+
+      if (state.weather.particles.length > 0) {
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        if (state.weather.rain) {
+          ctx.fillStyle = 'rgba(150,190,255,0.55)';
+          ctx.font = '14px "Courier Prime", monospace';
+          for (const p of state.weather.particles) {
+            ctx.fillText('/', p.x, p.y);
+          }
+        } else if (state.weather.snow) {
+          ctx.fillStyle = 'rgba(230,245,255,0.8)';
+          ctx.font = '14px "Courier Prime", monospace';
+          for (const p of state.weather.particles) {
+            ctx.fillText((Math.floor((p.x + p.y) * 0.03) % 2 === 0) ? '*' : '.', p.x, p.y);
+          }
+        } else if (state.weather.highWind) {
+          ctx.fillStyle = 'rgba(190,225,210,0.5)';
+          ctx.font = '13px "Courier Prime", monospace';
+          for (const p of state.weather.particles) {
+            ctx.fillText('-', p.x, p.y);
+          }
+        }
+      }
+
+      if (state.weather.lightningTimer > 0) {
+        const a = clamp(state.weather.lightningTimer / 0.22, 0, 1);
+        ctx.fillStyle = `rgba(240,248,255,${0.11 + a * 0.24})`;
+        ctx.fillRect(0, 0, state.width, state.height);
+        const lx = state.weather.lightningX;
+        let y = 0;
+        ctx.fillStyle = `rgba(255,255,255,${0.55 + a * 0.35})`;
+        ctx.font = '18px "Courier Prime", monospace';
+        for (let i = 0; i < 12; i++) {
+          const jx = (Math.random() - 0.5) * 28;
+          const jy = 24 + Math.random() * 26;
+          y += jy;
+          ctx.fillText('|', lx + jx, y);
+          if (Math.random() < 0.45) ctx.fillText('/', lx + jx - 8, y + 7);
+        }
+      }
+    }
+
+    function drawPatternCues() {
+      const level = state.level;
+      const phase = state.frame * 0.04;
+      ctx.save();
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+
+      if (level === 1) {
+        ctx.font = '14px "Courier Prime", monospace';
+        const leftHot = Math.sin(phase * 1.8) > 0;
+        for (let y = 120; y < state.height - 80; y += 56) {
+          ctx.fillStyle = leftHot ? 'rgba(140,255,170,0.22)' : 'rgba(140,255,170,0.08)';
+          ctx.fillText('|~|', state.width * 0.22, y);
+          ctx.fillStyle = !leftHot ? 'rgba(140,255,170,0.22)' : 'rgba(140,255,170,0.08)';
+          ctx.fillText('|~|', state.width * 0.78, y + 20);
+        }
+      } else if (level === 2) {
+        ctx.font = '13px "Courier Prime", monospace';
+        for (let r = 80; r < 280; r += 44) {
+          const pulse = 0.08 + Math.max(0, Math.sin(phase * 2.4 - r * 0.02)) * 0.18;
+          ctx.fillStyle = `rgba(152,214,255,${pulse})`;
+          for (let a = 0; a < Math.PI * 2; a += Math.PI / 8) {
+            ctx.fillText('~', state.cx + Math.cos(a) * r, state.cy + Math.sin(a) * r * 0.48);
+          }
+        }
+      } else if (level === 3) {
+        ctx.font = '14px "Courier Prime", monospace';
+        ctx.fillStyle = 'rgba(155,235,255,0.18)';
+        for (let x = -80; x < state.width + 80; x += 120) {
+          for (let y = 80; y < state.height - 40; y += 64) {
+            ctx.fillText('///', x + (y % 128) * 0.3, y);
+          }
+        }
+      } else if (level === 4) {
+        ctx.font = '14px "Courier Prime", monospace';
+        for (let x = state.width * 0.24; x <= state.width * 0.76; x += 118) {
+          for (let y = 120; y <= state.height - 120; y += 96) {
+            const hot = Math.abs(x - state.cx) < 70 && y > state.cy - 40 && y < state.cy + 140;
+            ctx.fillStyle = hot ? 'rgba(255,196,132,0.12)' : 'rgba(150,255,182,0.12)';
+            ctx.fillText(hot ? '+ +' : ': :', x, y);
+            ctx.fillText(hot ? '--' : '..', x, y + 16);
+          }
+        }
+      } else if (level === 5) {
+        ctx.font = '13px "Courier Prime", monospace';
+        const seq = ['1', '2', '3', '4'];
+        const y = 112;
+        for (let i = 0; i < seq.length; i++) {
+          const active = Math.floor(phase * 2.3) % seq.length === i;
+          ctx.fillStyle = active ? 'rgba(255,248,155,0.32)' : 'rgba(255,248,155,0.10)';
+          ctx.fillText(`[${seq[i]}]`, state.width * 0.24 + i * state.width * 0.16, y + (i % 2) * 24);
+        }
+      } else if (level === 6) {
+        ctx.font = '14px "Courier Prime", monospace';
+        for (let y = 120; y < state.height - 60; y += 54) {
+          const drift = 0.07 + ((y / state.height) * 0.12);
+          ctx.fillStyle = `rgba(120,210,255,${drift})`;
+          for (let x = 48; x < state.width; x += 96) {
+            ctx.fillText('~~~~', x + Math.sin(phase + y * 0.02) * 18, y);
+          }
+        }
+      } else if (level === 7) {
+        ctx.font = '14px "Courier Prime", monospace';
+        ctx.fillStyle = 'rgba(155,255,155,0.12)';
+        for (let y = 104; y < state.height - 70; y += 60) {
+          ctx.fillText('/|\\', state.width * 0.25, y);
+          ctx.fillText('/|\\', state.width * 0.75, y);
+        }
+        ctx.fillStyle = 'rgba(255,225,128,0.16)';
+        ctx.fillText('/~\\', state.width * 0.61, state.cy - 64);
+      } else if (level === 8) {
+        ctx.fillStyle = 'rgba(230,240,255,0.08)';
+        for (let i = 0; i < 3; i++) {
+          const w = 140;
+          const x = state.width * (0.24 + i * 0.22);
+          const reveal = (Math.floor(phase * 1.2) + i) % 4 < 2;
+          ctx.fillRect(x - w / 2, 112 + i * 54, w, 34);
+          if (reveal) {
+            ctx.fillStyle = 'rgba(255,244,166,0.22)';
+            ctx.font = '13px "Courier Prime", monospace';
+            ctx.fillText(`[${i + 1}]`, x, 128 + i * 54);
+            ctx.fillStyle = 'rgba(230,240,255,0.08)';
+          }
+        }
+      } else if (level === 9) {
+        ctx.font = '13px "Courier Prime", monospace';
+        ctx.fillStyle = 'rgba(135,225,255,0.14)';
+        for (let x = 56; x < state.width; x += 118) {
+          ctx.fillText('///', x, 122 + Math.sin(phase + x * 0.01) * 20);
+        }
+        ctx.fillStyle = 'rgba(255,238,140,0.16)';
+        for (let r = 90; r < 220; r += 54) {
+          for (let a = 0; a < Math.PI * 2; a += Math.PI / 6) {
+            ctx.fillText('.', state.cx + Math.cos(a + phase * 0.5) * r, state.cy + Math.sin(a + phase * 0.5) * r * 0.44);
+          }
+        }
+      } else if (level === 10) {
+        ctx.font = '14px "Courier Prime", monospace';
+        for (let y = 110; y < state.height - 90; y += 62) {
+          ctx.fillStyle = 'rgba(175,255,175,0.14)';
+          ctx.fillText('<|>', state.width * 0.28, y);
+          ctx.fillText('<|>', state.width * 0.72, y);
+        }
+        ctx.fillStyle = 'rgba(255,120,120,0.16)';
+        ctx.fillText('<!>', state.width * (Math.sin(phase * 0.9) > 0 ? 0.41 : 0.59), state.cy - 72);
+      } else if (level === 11) {
+        ctx.font = '13px "Courier Prime", monospace';
+        ctx.fillStyle = 'rgba(120,185,255,0.16)';
+        for (let y = 110; y < state.height - 90; y += 54) ctx.fillText('[BLUE]', 92, y);
+        ctx.fillStyle = 'rgba(255,232,140,0.16)';
+        for (let x = state.width * 0.32; x < state.width - 80; x += 116) ctx.fillText('$$$', x, 104 + Math.sin(phase + x * 0.01) * 16);
+      } else if (level === 12) {
+        ctx.font = '14px "Courier Prime", monospace';
+        ctx.fillStyle = 'rgba(255,190,120,0.15)';
+        for (let y = 96; y < state.height - 60; y += 50) {
+          ctx.fillText('>>', state.width * 0.2, y);
+          ctx.fillText('<<', state.width * 0.8, y + 14);
+        }
+        ctx.fillStyle = 'rgba(195,235,255,0.12)';
+        for (let x = state.width * 0.3; x < state.width * 0.72; x += 92) {
+          ctx.fillText('|', x, state.cy - 160);
+          ctx.fillText('|', x, state.cy + 160);
+        }
+      }
+
+      ctx.restore();
+    }
+
+    function drawMedicinalAimLine() {
+      if (!state.medAim.active || state.medAim.timer <= 0) return;
+      ctx.save();
+      ctx.font = '12px "Courier Prime", monospace';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      const dx = state.medAim.toX - state.medAim.fromX;
+      const dy = state.medAim.toY - state.medAim.fromY;
+      const dist = Math.max(1, Math.hypot(dx, dy));
+      const steps = Math.max(4, Math.floor(dist / 15));
+      ctx.fillStyle = '#dfffd0';
+      for (let i = 0; i <= steps; i++) {
+        const t = i / steps;
+        ctx.fillText('.', state.medAim.fromX + dx * t, state.medAim.fromY + dy * t);
+      }
+      ctx.restore();
+    }
+
+    function drawSweepEffect() {
+      if (!state.sweep.active) return;
+      const ox = frogX();
+      const oy = frogY() + 18;
+      ctx.fillStyle = '#d5ff9a';
+      ctx.font = '16px "Courier Prime", monospace';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+
+      for (let d = 10; d < state.sweep.range; d += 10) {
+        const x = ox + Math.cos(state.sweep.angle) * d;
+        const y = oy + Math.sin(state.sweep.angle) * d;
+        const px = -Math.sin(state.sweep.angle);
+        const py = Math.cos(state.sweep.angle);
+        ctx.fillText('*', x, y);
+        ctx.fillText('*', x + px * 5, y + py * 5);
+        ctx.fillText('*', x - px * 5, y - py * 5);
+      }
+    }
+
+    function drawFinalBullets() {
+      if (!state.finalChallenge.active) return;
+      ctx.fillStyle = '#ffb76d';
+      ctx.font = '700 16px "Courier Prime", monospace';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      for (const b of state.finalChallenge.bullets) {
+        ctx.fillText('>', b.x, b.y);
+      }
+    }
+
+    function drawEndingStarryBackdrop(alpha = 1) {
+      ctx.save();
+      ctx.globalAlpha = alpha;
+      ctx.fillStyle = 'rgba(8, 20, 56, 0.82)';
+      ctx.fillRect(0, 0, state.width, state.height);
+
+      const palette = ['#5f8dff', '#79c8ff', '#ffd96f', '#fff3b2', '#9d7bff', '#68b7ff'];
+      const swirls = [
+        { x: state.width * 0.26, y: state.height * 0.24, radius: 22, turn: 0.42, stretchX: 1.18, stretchY: 0.76 },
+        { x: state.width * 0.69, y: state.height * 0.2, radius: 30, turn: -0.38, stretchX: 1.26, stretchY: 0.82 },
+        { x: state.width * 0.52, y: state.height * 0.34, radius: 18, turn: 0.34, stretchX: 1.45, stretchY: 0.58 },
+        { x: state.width * 0.15, y: state.height * 0.62, radius: 16, turn: 0.3, stretchX: 1.7, stretchY: 0.64 },
+        { x: state.width * 0.84, y: state.height * 0.58, radius: 18, turn: -0.27, stretchX: 1.62, stretchY: 0.7 },
+        { x: state.width * 0.48, y: state.height * 0.8, radius: 22, turn: 0.22, stretchX: 2.2, stretchY: 0.42 }
+      ];
+      const flowBands = [
+        { y: state.height * 0.15, amp: 30, speed: 0.55, spacing: 20, slope: 0.018, width: 2.4, charA: '.', charB: 'o' },
+        { y: state.height * 0.26, amp: 42, speed: -0.42, spacing: 18, slope: -0.014, width: 2.8, charA: 'o', charB: '*' },
+        { y: state.height * 0.4, amp: 54, speed: 0.48, spacing: 20, slope: 0.011, width: 3.4, charA: '.', charB: '*' },
+        { y: state.height * 0.57, amp: 46, speed: -0.34, spacing: 22, slope: -0.012, width: 3.2, charA: 'o', charB: '.' },
+        { y: state.height * 0.74, amp: 34, speed: 0.28, spacing: 24, slope: 0.01, width: 2.6, charA: '.', charB: 'o' }
+      ];
+
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.font = '700 14px "Courier Prime", monospace';
+
+      for (let i = 0; i < flowBands.length; i++) {
+        const band = flowBands[i];
+        for (let x = -120; x < state.width + 140; x += band.spacing) {
+          const curve = Math.sin(x * 0.01 + state.ending.timer * band.speed + i * 0.7) * band.amp;
+          const sweep = Math.cos(x * 0.006 - state.ending.timer * (band.speed * 0.7) + i * 1.3) * (band.amp * 0.34);
+          const baseY = band.y + curve + sweep;
+          for (let lane = -1; lane <= 1; lane++) {
+            const fx = x + lane * 10;
+            const fy = baseY + lane * band.width * 8 + Math.sin(fx * band.slope + state.ending.timer * 0.7) * 8;
+            const waveChar = (Math.floor((x + state.frame * 2 + lane * 9) / 26) % 4 === 0) ? band.charB : band.charA;
+            const color = palette[(i + lane + Math.floor((x + state.frame) / 48) + palette.length * 4) % palette.length];
+            ctx.globalAlpha = alpha * (0.09 + (lane === 0 ? 0.24 : 0.12));
+            ctx.fillStyle = color;
+            ctx.fillText(waveChar, fx, fy);
+          }
+        }
+      }
+
+      ctx.font = '700 13px "Courier Prime", monospace';
+      for (let y = 18; y < state.height; y += 26) {
+        for (let x = 12; x < state.width; x += 34) {
+          const drift = Math.sin(x * 0.009 + y * 0.01 + state.ending.timer * 0.82) + Math.cos(y * 0.014 - state.ending.timer * 0.47);
+          if (Math.abs(drift) < 1.08) continue;
+          const color = palette[(Math.floor(x / 90) + Math.floor(y / 70) + Math.floor(state.frame / 12)) % palette.length];
+          ctx.globalAlpha = alpha * (0.08 + Math.abs(drift) * 0.07);
+          ctx.fillStyle = color;
+          ctx.fillText(drift > 1.55 ? '*' : 'o', x + Math.sin(y * 0.03 + state.ending.timer * 0.6) * 10, y + Math.cos(x * 0.014 - state.ending.timer * 0.5) * 6);
+        }
+      }
+
+      for (let i = 0; i < swirls.length; i++) {
+        const swirl = swirls[i];
+        for (let step = 0; step < 42; step++) {
+          const a = state.ending.timer * swirl.turn + step * 0.34;
+          const r = swirl.radius + step * 3.8;
+          const x = swirl.x + Math.cos(a) * r * swirl.stretchX;
+          const y = swirl.y + Math.sin(a) * r * swirl.stretchY;
+          const char = step % 7 === 0 ? '*' : (step % 3 === 0 ? 'o' : '.');
+          const color = palette[(i * 2 + step + Math.floor(state.frame / 8)) % palette.length];
+          ctx.globalAlpha = alpha * (0.18 + (step / 42) * 0.36);
+          ctx.fillStyle = color;
+          ctx.fillText(char, x, y);
+        }
+      }
+
+      ctx.globalAlpha = alpha * 0.9;
+      ctx.fillStyle = '#ffe590';
+      ctx.font = '700 18px "Courier Prime", monospace';
+      for (let ring = 0; ring < 4; ring++) {
+        for (let a = 0; a < Math.PI * 2; a += Math.PI / 7) {
+          const r = 16 + ring * 10;
+          ctx.fillText(ring === 0 ? '@' : '*', state.width * 0.76 + Math.cos(a + state.ending.timer * 0.16) * r, state.height * 0.22 + Math.sin(a + state.ending.timer * 0.16) * r * 0.76);
+        }
+      }
+
+      ctx.globalAlpha = alpha * 0.32;
+      ctx.fillStyle = '#7ae0ff';
+      ctx.font = '700 13px "Courier Prime", monospace';
+      for (let band = 0; band < 6; band++) {
+        const baseY = state.height * (0.12 + band * 0.14);
+        for (let x = -60; x < state.width + 100; x += 24) {
+          const y = baseY + Math.sin(x * 0.012 + state.ending.timer * (0.58 + band * 0.06) + band) * (10 + band * 4)
+            + Math.cos(x * 0.004 - state.ending.timer * 0.24 + band) * (5 + band * 2);
+          ctx.fillText(band % 2 === 0 ? '~' : '-', x, y);
+        }
+      }
+
+      ctx.globalAlpha = alpha * 0.24;
+      ctx.fillStyle = '#1b4d56';
+      for (let y = state.height * 0.34; y < state.height * 0.78; y += 18) {
+        const sway = Math.sin(state.ending.timer * 0.9 + y * 0.03) * 10;
+        ctx.fillText('/|\\', state.width * 0.13 + sway, y);
+        ctx.fillText('/|\\', state.width * 0.9 + sway * 0.7, y + 8);
+      }
+
+      ctx.globalAlpha = 1;
+      ctx.restore();
+    }
+
+    function drawEndingStarryCouple(alpha = 1) {
+      const layout = getEndingLayout();
+      const leftX = layout.leftX;
+      const rightX = layout.rightX;
+      const baseY = layout.leftY + 2;
+
+      ctx.save();
+      ctx.globalAlpha = alpha;
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+
+      ctx.fillStyle = 'rgba(24, 48, 78, 0.7)';
+      ctx.font = '700 18px "Courier Prime", monospace';
+      for (let i = -3; i <= 3; i++) {
+        ctx.fillText('_/\\_', state.cx + i * 34, baseY + 62 + Math.abs(i) * 4);
+      }
+
+      ctx.fillStyle = '#8cff7a';
+      ctx.font = '700 21px "Courier Prime", monospace';
+      ctx.fillText('  _   _  ', leftX, baseY - 28);
+      ctx.fillText(' (-) (-) ', leftX, baseY - 8);
+      ctx.fillText('/( >__< )\\', leftX, baseY + 12);
+      ctx.fillText(' ^^   ^^ ', leftX, baseY + 32);
+
+      ctx.fillStyle = '#ff87d9';
+      ctx.fillText('  _   _  ', rightX, baseY - 28);
+      ctx.fillText(' (-) (-) ', rightX, baseY - 8);
+      ctx.fillText('/( <33< )\\', rightX, baseY + 12);
+      ctx.fillText(' ^^   ^^ ', rightX, baseY + 32);
+
+      ctx.fillStyle = '#ffd7f0';
+      ctx.font = '700 18px "Courier Prime", monospace';
+      ctx.fillText('<3', state.cx, baseY - 2);
+      ctx.fillStyle = '#d7e8ff';
+      ctx.font = '700 15px "Courier Prime", monospace';
+      ctx.fillText('. . . . .', state.cx, baseY - 66);
+      ctx.restore();
+    }
+
+    function drawEndingEverAfterText(starryBlend, alpha = 1) {
+      const layout = getEndingLayout();
+      const everAfterArt = [
+        'HH   HH   AAA   PPPP   PPPP   III  LL      YY   YY',
+        'HH   HH  AAAAA  PP  PP PP  PP  I   LL       YY YY ',
+        'HHHHHHH AA   AA PPPP   PPPP    I   LL        YYY  ',
+        'HH   HH AAAAAAA PP     PP      I   LL         Y   ',
+        'HH   HH AA   AA PP     PP     III  LLLLL      Y   ',
+        '',
+        'EEEEE VV   VV EEEEE RRRR    AAA   FFFFF TTTTT EEEEE RRRR ',
+        'EE    VV   VV EE    RR RR  AAAAA  FF      T   EE    RR RR',
+        'EEEE   VV VV  EEEE  RRRR  AA   AA FFFF    T   EEEE  RRRR ',
+        'EE      VVV   EE    RR RR AAAAAAA FF      T   EE    RR RR',
+        'EEEEE    V    EEEEE RR  RR AA   AA FF      T   EEEEE RR  RR'
+      ];
+      const neonPalette = ['#ff5fd5', '#5fe7ff', '#ffe66d', '#8fff85', '#b78dff', '#ff9a66'];
+      const starryPalette = ['#8fb6ff', '#6fd8ff', '#fff0a2', '#b5deff', '#aeb7ff', '#88d7c7'];
+      ctx.save();
+      ctx.globalAlpha = alpha;
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.font = '700 18px "Courier Prime", monospace';
+      for (let i = 0; i < everAfterArt.length; i++) {
+        const phase = Math.floor(state.frame / 2) + i * 2;
+        const flash = (state.frame + i * 7) % 17 < 2;
+        const baseColor = mixHexColors(
+          neonPalette[(phase + neonPalette.length * 4) % neonPalette.length],
+          starryPalette[(phase + starryPalette.length * 4) % starryPalette.length],
+          starryBlend
+        );
+        const color = flash ? mixHexColors('#fff7ff', '#f4fbff', starryBlend) : baseColor;
+        ctx.fillStyle = color;
+        ctx.shadowColor = color;
+        ctx.shadowBlur = flash ? (20 - starryBlend * 5) : (11 - starryBlend * 2);
+        ctx.globalAlpha = alpha * (flash ? 1 : (0.82 + 0.18 * Math.sin(state.frame * 0.28 + i * 0.6)));
+        ctx.fillText(everAfterArt[i], state.cx, layout.titleY + i * 18);
+      }
+      ctx.restore();
+    }
+
+    function drawFrog() {
+      ctx.save();
+      if (state.effects.drunk > 0) {
+        ctx.shadowBlur = 26;
+        ctx.shadowColor = `hsl(${(state.frame * 9) % 360} 100% 70%)`;
+      } else if (state.effects.glow > 0) {
+        ctx.shadowBlur = 24;
+        ctx.shadowColor = '#d6ff8a';
+      }
+
+      ctx.fillStyle = state.currentEnv.frogColor;
+      ctx.font = '700 20px "Courier Prime", monospace';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+
+      const blink = Math.sin(state.frame * 0.04) > 0.96;
+      const mouthOpen = state.tongue.state !== 'IDLE';
+
+      let eyeLine = `  (${blink ? '-' : 'o'}) (${blink ? '-' : 'o'})  `;
+      if (state.effects.drunk > 0) {
+        eyeLine = ' ((o)) ((o)) ';
+      }
+
+      const mouthClosed = state.effects.spiral > 0 ? '>(@@)< ' : '>___< ';
+      const mouthOpenText = state.effects.spiral > 0 ? '>@@@< ' : '>OOO< ';
+      const airborne = state.frog.jumpZ > 1;
+      const groundX = state.cx + state.frog.ox;
+      const groundY = state.cy + state.frog.oy;
+      const fx = groundX;
+      const fy = groundY - state.frog.jumpZ;
+      const shadowAlpha = clamp(0.22 - state.frog.jumpZ / 520, 0.06, 0.2);
+      const shadowScale = clamp(1 - state.frog.jumpZ / 240, 0.45, 1);
+
+      ctx.save();
+      ctx.shadowBlur = 0;
+      ctx.fillStyle = `rgba(0, 0, 0, ${shadowAlpha})`;
+      ctx.font = '700 18px "Courier Prime", monospace';
+      ctx.fillText('_'.repeat(Math.max(3, Math.round(7 * shadowScale))), groundX, groundY + 34);
+      ctx.restore();
+
+      const frogClosed = [
+        '   _   _   ',
+        eyeLine,
+        ' /       \\ ',
+        `/( ${mouthClosed})\\`,
+        '  ^^   ^^  '
+      ];
+
+      const frogOpen = [
+        '   _   _   ',
+        eyeLine,
+        ' /       \\ ',
+        `/( ${mouthOpenText})\\`,
+        '  ^^   ^^  '
+      ];
+
+      const frogJump = [
+        '   _   _   ',
+        eyeLine,
+        ' /  ___  \\ ',
+        `/( ${mouthOpen ? mouthOpenText : mouthClosed})\\`,
+        ' _/\\   /\\_ '
+      ];
+
+      const art = airborne ? frogJump : (mouthOpen ? frogOpen : frogClosed);
+      const bob = airborne ? 0 : Math.sin(state.frame * 0.09) * 2;
+      const jumpStretch = clamp(state.frog.jumpZ / 220, 0, 0.18);
+      const landSquash = state.frog.landSquash;
+      const scaleX = 1 - jumpStretch * 0.12 + landSquash * 0.18;
+      const scaleY = 1 + jumpStretch * 0.1 - landSquash * 0.12;
+      ctx.translate(fx, fy + bob);
+      ctx.scale(scaleX, scaleY);
+      for (let i = 0; i < art.length; i++) {
+        ctx.fillText(art[i], 0, -42 + i * 19);
+      }
+      ctx.restore();
+    }
+
+    function drawRivalEntity(rv) {
+      if (!rv.active) return;
+      if (state.mode === MODE.START || state.mode === MODE.PAUSED) return;
+
+      const bob = rv.type === 'chameleon' ? 0 : Math.sin(state.frame * 0.11 + rv.x * 0.02) * 2;
+      const rx = rv.x;
+      const ry = rv.y + bob;
+
+      ctx.save();
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.font = '700 19px "Courier Prime", monospace';
+
+      if (rv.type === 'bluefrog') {
+        ctx.shadowBlur = 14;
+        ctx.shadowColor = '#74baff';
+        ctx.fillStyle = '#74baff';
+        const bite = rv.eatCooldown > 0 ? '>OO<' : '>__<';
+        const art = [
+          '  _   _  ',
+          ' (o) (o) ',
+          `/( ${bite} )\\`,
+          ' ^^   ^^ '
+        ];
+        for (let i = 0; i < art.length; i++) {
+          ctx.fillText(art[i], rx, ry - 30 + i * 16);
+        }
+      } else {
+        ctx.shadowBlur = 16;
+        ctx.shadowColor = '#b8ffce';
+        const art = [
+          '  .-^-.-.  ',
+          ' ((o)(o))> ',
+          ' /{=~=~}=\\ ',
+          '   /\\  /\\  '
+        ];
+        const pal = ['#9dff7a', '#7bd6ff', '#ff9ad8', '#ffe077'];
+        const base = Math.floor(state.frame / 7);
+        for (let i = 0; i < art.length; i++) {
+          ctx.fillStyle = pal[(base + i) % pal.length];
+          ctx.fillText(art[i], rx, ry - 30 + i * 16);
+        }
+
+        if (rv.chTongue.active && rv.chTongue.len > 4) {
+          const mouthX = rx + (rx < state.cx ? 10 : -10);
+          const mouthY = ry - 4;
+          const ch = glyphForAngle(rv.chTongue.angle);
+          ctx.shadowBlur = 0;
+          ctx.fillStyle = '#ffd78d';
+          ctx.font = '700 16px "Courier Prime", monospace';
+          for (let d = 8; d < rv.chTongue.len; d += 9) {
+            ctx.fillText(ch, mouthX + Math.cos(rv.chTongue.angle) * d, mouthY + Math.sin(rv.chTongue.angle) * d);
+          }
+          const tx = mouthX + Math.cos(rv.chTongue.angle) * rv.chTongue.len;
+          const ty = mouthY + Math.sin(rv.chTongue.angle) * rv.chTongue.len;
+          ctx.fillText(rv.chTongue.catchGlyph || 'o', tx, ty);
+        }
+      }
+
+      ctx.shadowBlur = 0;
+      ctx.fillStyle = '#e8f8ff';
+      ctx.font = '700 14px "Courier Prime", monospace';
+      ctx.fillText(`[R] ${rv.score}`, rx, ry - 52);
+      ctx.restore();
+    }
+
+    function drawRivals() {
+      drawRivalEntity(state.rival);
+      drawRivalEntity(state.rival2);
+    }
+
+    function drawTongue() {
+      const tongue = state.tongue;
+      if (tongue.state === 'IDLE' || tongue.length <= 0) return;
+
+      const px = -tongue.dy;
+      const py = tongue.dx;
+      const spinChars = ['|', '/', '-', '\\'];
+
+      ctx.fillStyle = '#ff77c7';
+      ctx.font = '700 18px "Courier Prime", monospace';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+
+      const thick = state.effects.medicinal > 0 ? 2 : 1;
+      for (let d = 14; d < tongue.length; d += 10) {
+        const pt = getTonguePoint(d);
+        let ch;
+        if (state.effects.spiral > 0) {
+          ch = spinChars[(Math.floor((d + state.frame) / 5)) % spinChars.length];
+        } else {
+          if (Math.abs(tongue.dx) > 0.001 && Math.abs(tongue.dy) > 0.001) {
+            ch = tongue.dx * tongue.dy > 0 ? '\\' : '/';
+          } else {
+            ch = Math.abs(tongue.dx) > Math.abs(tongue.dy) ? '=' : '|';
+          }
+        }
+        ctx.fillText(ch, pt.x, pt.y);
+        if (thick > 1) {
+          ctx.fillText(ch, pt.x + px * 4, pt.y + py * 4);
+          ctx.fillText(ch, pt.x - px * 4, pt.y - py * 4);
+        }
+      }
+
+      const tip = getTonguePoint(tongue.length);
+
+      if (tongue.caughtFlies.length > 0) {
+        const last = tongue.caughtFlies[tongue.caughtFlies.length - 1];
+        ctx.fillStyle = last.color;
+        const cap = last.id === 'letter' ? `[${last.letter}]` : `>${last.def.glyph}<`;
+        ctx.fillText(cap, tip.x, tip.y);
+      } else {
+        ctx.fillStyle = state.effects.spiral > 0 ? '#bfe8ff' : '#ff97cf';
+        ctx.fillText(state.effects.spiral > 0 ? '@' : 'O', tip.x, tip.y);
+      }
+    }
+
+    function drawFloatTexts() {
+      ctx.font = '700 18px "Courier Prime", monospace';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      for (const t of state.floatTexts) {
+        ctx.globalAlpha = Math.max(0, t.life / t.max);
+        ctx.fillStyle = t.color;
+        ctx.fillText(t.text, t.x, t.y);
+      }
+      ctx.globalAlpha = 1;
+    }
+
+    function drawCheatSheet() {
+      if (!state.showCheatSheet) return;
+      const x = state.width - 12;
+      const y = state.height - 100;
+      ctx.textAlign = 'right';
+      ctx.textBaseline = 'middle';
+      ctx.fillStyle = 'rgba(0, 0, 0, 0.5)';
+      ctx.fillRect(x - 320, y - 60, 308, 76);
+      ctx.fillStyle = '#c6ffd0';
+      ctx.font = '700 14px "Courier Prime", monospace';
+      ctx.fillText('SECRET TEST CHEATS', x - 16, y - 36);
+      ctx.fillStyle = '#ddffdd';
+      ctx.fillText('CTRL+F : NEXT LEVEL', x - 16, y - 16);
+      ctx.fillText('CTRL+O : 360 SWEEP', x - 16, y + 4);
+      ctx.fillText('CTRL+/ : TOGGLE PANEL', x - 16, y + 24);
+    }
+
+    function drawOverlays() {
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+
+      if (state.mode === MODE.START) {
+        ctx.fillStyle = 'rgba(0, 0, 0, 0.56)';
+        ctx.fillRect(0, 0, state.width, state.height);
+
+        ctx.fillStyle = '#d3ffd3';
+        ctx.font = '700 40px "Courier Prime", monospace';
+        ctx.fillText('ASCII FROG', state.cx, state.cy - 186);
+        const infoY = state.cy + 108;
+        ctx.fillStyle = '#89ff89';
+        ctx.font = '700 18px "Courier Prime", monospace';
+        ctx.fillText('STORY', state.cx, infoY);
+        ctx.font = '700 16px "Courier Prime", monospace';
+        ctx.fillStyle = '#c3eec3';
+        ctx.fillText('ASCII Frog starts in the swamps and rises through rival zones.', state.cx, infoY + 24);
+        ctx.fillText('Blue Frog bumps, Chameleon shoots, and flies evolve every level.', state.cx, infoY + 48);
+        ctx.fillText('Survive the final challenge and reach the heart-shower ending.', state.cx, infoY + 72);
+
+        ctx.fillStyle = '#89ff89';
+        ctx.font = '700 18px "Courier Prime", monospace';
+        ctx.fillText('HOW TO PLAY', state.cx, infoY + 106);
+        ctx.font = '700 15px "Courier Prime", monospace';
+        ctx.fillStyle = '#d4ffd4';
+        ctx.fillText('ARROWS: SHOOT (2 ARROWS = DIAGONAL)   |   SPACE+ARROW: JUMP (L3+)', state.cx, infoY + 128);
+        ctx.fillText('P: PAUSE   F: FULLSCREEN   ENTER: START/RESTART', state.cx, infoY + 148);
+
+        ctx.fillStyle = '#89ff89';
+        ctx.font = '700 18px "Courier Prime", monospace';
+        ctx.fillText('FLY TYPES + EFFECTS', state.cx, infoY + 178);
+        ctx.font = '700 15px "Courier Prime", monospace';
+        ctx.fillStyle = '#ffe867'; ctx.fillText('& NORMAL +10', state.cx - 280, infoY + 200);
+        ctx.fillStyle = '#9eff64'; ctx.fillText('h GRASSHOPPER BURSTS +16', state.cx - 40, infoY + 200);
+        ctx.fillStyle = '#ff6767'; ctx.fillText('[*] BOMB PENALTY', state.cx + 220, infoY + 200);
+        ctx.fillStyle = '#fff27f'; ctx.fillText('{o} FIREFLY BOOST+TIME FREEZE', state.cx - 220, infoY + 222);
+        ctx.fillStyle = '#c173ff'; ctx.fillText('!p! POISON CONFUSES AIM', state.cx + 10, infoY + 222);
+        ctx.fillStyle = '#7bd3ff'; ctx.fillText('@@ SPIRAL WIDER CATCH', state.cx + 250, infoY + 222);
+
+        ctx.font = '700 16px "Courier Prime", monospace';
+        ctx.fillStyle = '#a6d9a6';
+        ctx.fillText('CLICK OR TAP ONCE TO WAKE BIT MUSIC', state.cx, infoY + 244);
+        ctx.fillStyle = '#89ff89';
+        ctx.font = '700 22px "Courier Prime", monospace';
+        ctx.fillText('PRESS ENTER OR ARROW TO START', state.cx, infoY + 268);
+      }
+
+      if (state.mode === MODE.LEVEL_UP) {
+        ctx.fillStyle = 'rgba(2, 2, 2, 0.48)';
+        ctx.fillRect(0, 0, state.width, state.height);
+        if (state.frame % 20 < 14) {
+          ctx.fillStyle = '#ffef86';
+          ctx.font = '700 48px "Courier Prime", monospace';
+          ctx.fillText(`LEVEL ${state.level} CLEAR`, state.cx, state.cy - 78);
+          ctx.font = '700 22px "Courier Prime", monospace';
+          ctx.fillText(`NEXT: LEVEL ${state.level + 1}`, state.cx, state.cy - 34);
+        }
+      }
+
+      if (state.mode === MODE.PAUSED) {
+        ctx.fillStyle = 'rgba(0, 0, 0, 0.45)';
+        ctx.fillRect(0, 0, state.width, state.height);
+        ctx.fillStyle = '#f2fff2';
+        ctx.font = '700 48px "Courier Prime", monospace';
+        ctx.fillText('PAUSED', state.cx, state.cy - 20);
+      }
+
+      if (state.mode === MODE.WIN) {
+        const starryBlend = getEndingStarryBlend();
+        const heartAlpha = clamp(1 - starryBlend * 0.92, 0, 1);
+        ctx.fillStyle = `rgba(0, 0, 0, ${0.58 + starryBlend * 0.1})`;
+        ctx.fillRect(0, 0, state.width, state.height);
+        const bases = getEndingTongueBases();
+        const layout = getEndingLayout();
+        const leftX = layout.leftX;
+        const rightX = layout.rightX;
+        const leftY = layout.leftY;
+        const rightY = layout.rightY;
+        const leftTip = getEndingTongueTip(state.ending.leftTongue, bases.leftX, bases.leftY);
+        const rightTip = getEndingTongueTip(state.ending.rightTongue, bases.rightX, bases.rightY);
+        if (heartAlpha > 0.02) {
+          ctx.save();
+          ctx.globalAlpha = heartAlpha;
+          for (const h of state.ending.hearts) {
+            ctx.fillStyle = state.frame % 18 < 9 ? '#ff8fc8' : '#ffb9df';
+            ctx.font = '700 16px "Courier Prime", monospace';
+            ctx.fillText('<3', h.x, h.y);
+          }
+
+          ctx.textAlign = 'center';
+          ctx.textBaseline = 'middle';
+          ctx.font = '700 17px "Courier Prime", monospace';
+          ctx.fillStyle = '#ffa4de';
+          const leftGlyph = glyphForAngle(state.ending.leftTongue.angle);
+          for (let d = 8; d < state.ending.leftTongue.len; d += 9) {
+            ctx.fillText(leftGlyph, bases.leftX + Math.cos(state.ending.leftTongue.angle) * d, bases.leftY + Math.sin(state.ending.leftTongue.angle) * d);
+          }
+          ctx.fillText('o', leftTip.x, leftTip.y);
+          const rightGlyph = glyphForAngle(state.ending.rightTongue.angle);
+          for (let d = 8; d < state.ending.rightTongue.len; d += 9) {
+            ctx.fillText(rightGlyph, bases.rightX + Math.cos(state.ending.rightTongue.angle) * d, bases.rightY + Math.sin(state.ending.rightTongue.angle) * d);
+          }
+          ctx.fillText('o', rightTip.x, rightTip.y);
+
+          ctx.fillStyle = '#8cff7a';
+          ctx.font = '700 21px "Courier Prime", monospace';
+          const leftMouth = state.ending.leftCatchTimer > 0 ? '>OO<' : '>oo<';
+          ctx.fillText('  _   _  ', leftX, leftY - 30);
+          ctx.fillText(' (o) (o) ', leftX, leftY - 10);
+          ctx.fillText(`/( ${leftMouth} )\\`, leftX, leftY + 10);
+          ctx.fillText(' ^^   ^^ ', leftX, leftY + 30);
+
+          ctx.fillStyle = '#ff87d9';
+          const rightMouth = state.ending.rightCatchTimer > 0 ? '<33>' : '<3<';
+          ctx.fillText('  _   _  ', rightX, rightY - 30);
+          ctx.fillText(' (o) (o) ', rightX, rightY - 10);
+          ctx.fillText(`/( ${rightMouth} )\\`, rightX, rightY + 10);
+          ctx.fillText(' ^^   ^^ ', rightX, rightY + 30);
+
+          if (state.ending.leftCatchTimer > 0) {
+            ctx.fillStyle = '#ffd1ec';
+            ctx.font = '700 16px "Courier Prime", monospace';
+            ctx.fillText('<3', leftX + 34, leftY - 2);
+          }
+          if (state.ending.rightCatchTimer > 0) {
+            ctx.fillStyle = '#ffd1ec';
+            ctx.font = '700 16px "Courier Prime", monospace';
+            ctx.fillText('<3', rightX - 34, rightY - 2);
+          }
+          ctx.restore();
+        }
+        if (starryBlend > 0.02) {
+          drawEndingStarryBackdrop(starryBlend);
+          drawEndingStarryCouple(starryBlend);
+        }
+        drawEndingEverAfterText(starryBlend, 0.96);
+        ctx.globalAlpha = 1;
+        ctx.shadowBlur = 0;
+      }
+
+      if (state.mode === MODE.GAME_OVER) {
+        ctx.fillStyle = 'rgba(0, 0, 0, 0.62)';
+        ctx.fillRect(0, 0, state.width, state.height);
+        ctx.fillStyle = '#ff9ea6';
+        ctx.font = '700 56px "Courier Prime", monospace';
+        ctx.fillText('GAME OVER', state.cx, state.cy - 72);
+        ctx.fillStyle = '#f2ffef';
+        ctx.font = '700 24px "Courier Prime", monospace';
+        ctx.fillText(`SCORE ${state.score}   HIGH ${state.highScore}`, state.cx, state.cy - 22);
+        const rivalResult = [state.rival.result, state.rival2.result].find(Boolean);
+        if (rivalResult) {
+          ctx.fillStyle = '#ffcdb4';
+          ctx.font = '700 21px "Courier Prime", monospace';
+          ctx.fillText(rivalResult, state.cx, state.cy + 10);
+        }
+        ctx.fillStyle = '#9dffb4';
+        ctx.font = '700 22px "Courier Prime", monospace';
+        ctx.fillText('PRESS ENTER TO RESTART', state.cx, state.cy + 54);
+      }
+
+      if (state.levelIntroTimer > 0 && state.mode === MODE.PLAYING) {
+        ctx.globalAlpha = clamp(state.levelIntroTimer / 2.1, 0, 1);
+        ctx.fillStyle = '#f5ffe2';
+        ctx.font = '700 24px "Courier Prime", monospace';
+        ctx.fillText(state.levelIntroText, state.cx, 54);
+        ctx.globalAlpha = 1;
+      }
+    }
+
+    function draw() {
+      if (state.mode === MODE.WIN) {
+        drawBackground();
+        drawOverlays();
+        return;
+      }
+
+      ctx.save();
+      if (state.shakeTimer > 0) {
+        const p = state.shakePower * (state.shakeTimer / 0.62);
+        const ox = (Math.random() - 0.5) * p;
+        const oy = (Math.random() - 0.5) * p;
+        ctx.translate(ox, oy);
+      }
+
+      drawBackground();
+      drawMedicinalAimLine();
+      drawSweepEffect();
+      drawTongue();
+      drawFrog();
+      drawRivals();
+      drawFinalBullets();
+      for (const fly of state.flies) fly.draw();
+      for (const p of state.particles) p.draw();
+      drawFloatTexts();
+      ctx.restore();
+
+      drawOverlays();
+      drawCheatSheet();
+    }
+
+    function tick(ts) {
+      if (!previousTs) previousTs = ts;
+      let delta = (ts - previousTs) / 1000;
+      if (delta > 0.12) delta = 0.12;
+      previousTs = ts;
+      accumulator += delta;
+
+      while (accumulator >= FIXED_STEP) {
+        update(FIXED_STEP);
+        accumulator -= FIXED_STEP;
+      }
+
+      draw();
+      rafId = requestAnimationFrame(tick);
+    }
+
+    function bindControls() {
+      window.addEventListener('pointerdown', () => {
+        unlockAudio();
+        startBitMusic();
+      });
+
+      window.addEventListener('touchstart', unlockAudio, { passive: true });
+      window.addEventListener('mousedown', unlockAudio);
+
+      window.addEventListener('keydown', (e) => {
+        keysDown.add(e.code);
+        unlockAudio();
+
+        if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'Space', 'KeyX'].includes(e.code)) {
+          e.preventDefault();
+        }
+        if (e.repeat && ['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(e.code)) {
+          return;
+        }
+
+        if (state.mode === MODE.START) {
+          ensureAudio();
+          startBitMusic();
+        }
+
+        const key = e.key.toLowerCase();
+
+        // Secret testing cheats.
+        if (e.ctrlKey && key === 'f') {
+          e.preventDefault();
+          cheatNextLevel();
+          return;
+        }
+        if (e.ctrlKey && key === 'o') {
+          e.preventDefault();
+          cheatSweep();
+          return;
+        }
+        if (e.ctrlKey && key === '/') {
+          e.preventDefault();
+          state.showCheatSheet = !state.showCheatSheet;
+          return;
+        }
+
+        if (key === 'p') {
+          if (state.mode !== MODE.START && state.mode !== MODE.WIN && state.mode !== MODE.GAME_OVER) togglePause();
+          return;
+        }
+
+        if (key === 'm') {
+          toggleMute();
+          return;
+        }
+
+        if (key === 'f') {
+          toggleFullscreen();
+          return;
+        }
+
+        if (e.code === 'Enter') {
+          clearPendingArrowShot();
+          if (state.mode === MODE.START || state.mode === MODE.WIN || state.mode === MODE.GAME_OVER) {
+            startGameFromMenu();
+          }
+          return;
+        }
+
+        if (e.code === 'Space') {
+          clearPendingArrowShot();
+          if (state.mode === MODE.PLAYING && state.level >= 3) {
+            let jumpDir = state.frog.facing;
+            if (keysDown.has('ArrowUp')) jumpDir = 'UP';
+            else if (keysDown.has('ArrowDown')) jumpDir = 'DOWN';
+            else if (keysDown.has('ArrowLeft')) jumpDir = 'LEFT';
+            else if (keysDown.has('ArrowRight')) jumpDir = 'RIGHT';
+            state.frog.facing = jumpDir;
+            triggerJump(jumpDir);
+          }
+          return;
+        }
+
+        if (e.code === 'KeyX') {
+          clearPendingArrowShot();
+          triggerMedicinalLineShot();
+          return;
+        }
+
+        if (state.mode === MODE.PLAYING || state.mode === MODE.START) {
+          if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(e.code)) {
+            const baseDir = getCardinalFromArrowCode(e.code);
+            state.frog.facing = baseDir;
+            if (keysDown.has('Space') && state.mode === MODE.PLAYING && state.level >= 3) {
+              clearPendingArrowShot();
+              triggerJump(baseDir);
+            } else {
+              queueArrowShot(e.code);
+            }
+          }
+        }
+      });
+
+      window.addEventListener('keyup', (e) => {
+        keysDown.delete(e.code);
+        if (pendingArrowCode === e.code) {
+          clearPendingArrowShot();
+        }
+      });
+
+      const touchMap = [
+        ['btn-up', 'UP'],
+        ['btn-down', 'DOWN'],
+        ['btn-left', 'LEFT'],
+        ['btn-right', 'RIGHT']
+      ];
+
+      for (const [id, dir] of touchMap) {
+        const btn = document.getElementById(id);
+        const trigger = (ev) => {
+          ev.preventDefault();
+          unlockAudio();
+          shootTongue(dir);
+        };
+        btn.addEventListener('pointerdown', trigger);
+        btn.addEventListener('touchstart', trigger, { passive: false });
+        btn.addEventListener('mousedown', trigger);
+      }
+
+      window.addEventListener('resize', resize);
+      document.addEventListener('visibilitychange', () => {
+        if (!document.hidden && !audioState.muted) unlockAudio();
+      });
+      document.addEventListener('fullscreenchange', resize);
+    }
+
+    function renderGameToText() {
+      const tongue = state.tongue;
+      const payload = {
+        coordinate_system: 'origin=(0,0) top-left; +x right; +y down',
+        mode: state.mode,
+        score: state.score,
+        high_score: state.highScore,
+        level: state.level,
+        level_goal: state.levelGoal,
+        combo: state.combo,
+        environment: state.currentEnv.name,
+        weather: {
+          name: state.weather.name,
+          wind_x: Number(state.weather.windX.toFixed(2)),
+          rain: state.weather.rain,
+          snow: state.weather.snow,
+          lightning_s: Number(state.weather.lightningTimer.toFixed(2))
+        },
+        ai_director: {
+          enabled: state.aiDirector.enabled,
+          source: state.aiDirector.source,
+          active: state.aiDirector.runtime.active,
+          note: state.aiDirector.lastNote,
+          ttl_s: Number(state.aiDirector.directiveTimer.toFixed(2))
+        },
+        frog: {
+          x: Number(frogX().toFixed(1)),
+          y: Number(frogY().toFixed(1)),
+          health: Number(state.health.frog.toFixed(1)),
+          max_health: Number(state.health.maxFrog.toFixed(1)),
+          confused_eyes: state.effects.drunk > 0,
+          glowing: state.effects.glow > 0,
+          jump_height: Number(state.frog.jumpZ.toFixed(1)),
+          jump_cooldown_s: Number(state.frog.jumpCooldown.toFixed(2)),
+          facing: state.frog.facing
+        },
+        tongue: {
+          state: tongue.state,
+          dir: tongue.dirName,
+          length: Number(tongue.length.toFixed(1)),
+          max_length: Number(tongue.maxLength.toFixed(1)),
+          sticky_mode: state.effects.medicinal > 0,
+          confused_curve: tongue.drunkShot,
+          med_line_active: state.medAim.active
+        },
+        effects: {
+          glow_s: Number(Math.max(0, state.effects.glow).toFixed(2)),
+          confused_s: Number(Math.max(0, state.effects.drunk).toFixed(2)),
+          spiral_s: Number(Math.max(0, state.effects.spiral).toFixed(2)),
+          medicinal_s: Number(Math.max(0, state.effects.medicinal).toFixed(2)),
+          time_freeze_s: Number(Math.max(0, state.effects.timeFreeze).toFixed(2))
+        },
+        quest: {
+          active: state.quest.active,
+          completed: state.quest.completed,
+          label: state.quest.label,
+          target: state.quest.target,
+          progress: state.quest.progress
+        },
+        flies: state.flies.slice(0, 30).map((f) => ({
+          type: f.id,
+          letter: f.letter || '',
+          x: Number(f.x.toFixed(1)),
+          y: Number(f.y.toFixed(1)),
+          points: f.points,
+          cloaked: !!f.camouflaged
+        })),
+        particles_visible: state.particles.length,
+        sweep: {
+          active: state.sweep.active,
+          angle: Number(state.sweep.angle.toFixed(2)),
+          range: Number(state.sweep.range.toFixed(1)),
+          bomb_protected: state.sweep.protectBombs
+        },
+        rival: {
+          active: state.rival.active,
+          type: state.rival.type,
+          name: state.rival.name,
+          score: state.rival.score,
+          target: state.rival.target,
+          health: state.rival.health,
+          max_health: state.rival.maxHealth,
+          x: Number(state.rival.x.toFixed(1)),
+          y: Number(state.rival.y.toFixed(1)),
+          corner_index: state.rival.cornerIndex,
+          tongue_active: !!(state.rival.chTongue && state.rival.chTongue.active),
+          tongue_len: Number((state.rival.chTongue ? state.rival.chTongue.len : 0).toFixed(1)),
+          result: state.rival.result
+        },
+        rival2: {
+          active: state.rival2.active,
+          type: state.rival2.type,
+          name: state.rival2.name,
+          score: state.rival2.score,
+          target: state.rival2.target,
+          health: state.rival2.health,
+          max_health: state.rival2.maxHealth,
+          x: Number(state.rival2.x.toFixed(1)),
+          y: Number(state.rival2.y.toFixed(1)),
+          corner_index: state.rival2.cornerIndex,
+          tongue_active: !!(state.rival2.chTongue && state.rival2.chTongue.active),
+          tongue_len: Number((state.rival2.chTongue ? state.rival2.chTongue.len : 0).toFixed(1)),
+          result: state.rival2.result
+        },
+        ending: {
+          scene: getEndingScene(),
+          scene_blend: Number(getEndingStarryBlend().toFixed(2)),
+          hearts_visible: state.ending.hearts.length,
+          left_catch_s: Number(state.ending.leftCatchTimer.toFixed(2)),
+          right_catch_s: Number(state.ending.rightCatchTimer.toFixed(2))
+        },
+        final_challenge: {
+          active: state.finalChallenge.active,
+          timer: Number(state.finalChallenge.timer.toFixed(2)),
+          duration: Number(state.finalChallenge.duration.toFixed(2)),
+          bullets: state.finalChallenge.bullets.slice(0, 25).map((b) => ({
+            x: Number(b.x.toFixed(1)),
+            y: Number(b.y.toFixed(1))
+          }))
+        },
+        cheats: {
+          ctrl_f_next_level: true,
+          ctrl_o_sweep: true
+        }
+      };
+      return JSON.stringify(payload);
+    }
+
+    window.render_game_to_text = renderGameToText;
+
+    window.advanceTime = (ms) => {
+      const steps = Math.max(1, Math.round(ms / (1000 / 60)));
+      for (let i = 0; i < steps; i++) update(FIXED_STEP);
+      draw();
+    };
+
+    function init() {
+      resize();
+      bindControls();
+      resetRun();
+      state.mode = MODE.START;
+      updateHud();
+      draw();
+      if (rafId) cancelAnimationFrame(rafId);
+      rafId = requestAnimationFrame(tick);
+    }
+
+    init();
+  </script>
+</body>
+</html>

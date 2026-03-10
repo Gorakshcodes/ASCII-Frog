@@ -1,0 +1,9 @@
+.env
+.env.local
+.DS_Store
+*.swp
+.playwright/
+node_modules/
+output/
+progress.md
+*_probe.mjs
