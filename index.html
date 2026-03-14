@@ -119,15 +119,28 @@
 
     #mobile-controls {
       position: absolute;
-      left: 50%;
-      transform: translateX(-50%);
-      bottom: 12px;
+      left: max(12px, env(safe-area-inset-left));
+      right: max(12px, env(safe-area-inset-right));
+      bottom: max(12px, env(safe-area-inset-bottom));
       display: none;
-      flex-direction: column;
-      align-items: center;
-      gap: 7px;
+      justify-content: space-between;
+      align-items: flex-end;
+      gap: 16px;
       z-index: 20;
       user-select: none;
+      pointer-events: none;
+    }
+
+    .mobile-cluster {
+      display: flex;
+      pointer-events: none;
+    }
+
+    .action-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(66px, 82px));
+      gap: 8px;
+      pointer-events: none;
     }
 
     .d-pad-row {
@@ -151,11 +164,47 @@
       text-shadow: 0 1px 0 #000;
       box-shadow: inset 0 -2px 0 rgba(0, 0, 0, 0.35);
       cursor: pointer;
+      pointer-events: auto;
+      touch-action: manipulation;
     }
 
     .d-btn:active {
       transform: translateY(1px);
       background: rgba(42, 72, 42, 0.82);
+    }
+
+    .d-btn.is-disabled {
+      opacity: 0.44;
+      filter: grayscale(0.35);
+    }
+
+    .d-btn.is-armed {
+      background: rgba(82, 118, 58, 0.92);
+      border-color: rgba(234, 255, 153, 0.6);
+      color: #fff7c0;
+    }
+
+    .action-btn {
+      width: 76px;
+      height: 50px;
+      font-size: 12px;
+      letter-spacing: 0.04em;
+      font-weight: 700;
+      padding: 0 6px;
+    }
+
+    .d-pad {
+      display: grid;
+      grid-template-columns: repeat(3, 58px);
+      grid-template-rows: repeat(3, 58px);
+      gap: 7px;
+      align-items: center;
+      justify-items: center;
+      pointer-events: none;
+    }
+
+    .d-pad .d-btn {
+      pointer-events: auto;
     }
 
     .spacer {
@@ -166,6 +215,33 @@
     @media (max-width: 920px), (hover: none), (pointer: coarse) {
       #mobile-controls {
         display: flex;
+      }
+
+      #flashBar {
+        bottom: calc(max(12px, env(safe-area-inset-bottom)) + 124px);
+      }
+    }
+
+    @media (max-width: 640px), (max-height: 860px) {
+      .action-grid {
+        grid-template-columns: repeat(2, minmax(62px, 74px));
+      }
+
+      .action-btn {
+        width: 70px;
+        height: 46px;
+        font-size: 11px;
+      }
+
+      .d-pad {
+        grid-template-columns: repeat(3, 54px);
+        grid-template-rows: repeat(3, 54px);
+      }
+
+      .d-pad .d-btn,
+      .spacer {
+        width: 54px;
+        height: 54px;
       }
     }
   </style>
@@ -197,13 +273,30 @@
     </div>
 
     <div id="mobile-controls" aria-label="Touch controls">
-      <div class="d-pad-row"><button class="d-btn" id="btn-up" aria-label="Shoot up">▲</button></div>
-      <div class="d-pad-row">
-        <button class="d-btn" id="btn-left" aria-label="Shoot left">◄</button>
-        <div class="spacer"></div>
-        <button class="d-btn" id="btn-right" aria-label="Shoot right">►</button>
+      <div class="mobile-cluster" id="mobile-actions">
+        <div class="action-grid">
+          <button class="d-btn action-btn" id="btn-start" aria-label="Start or restart">START</button>
+          <button class="d-btn action-btn" id="btn-pause" aria-label="Pause or resume">PAUSE</button>
+          <button class="d-btn action-btn" id="btn-jump" aria-label="Arm jump">JUMP</button>
+          <button class="d-btn action-btn" id="btn-line" aria-label="Medicinal line shot">LINE</button>
+          <button class="d-btn action-btn" id="btn-mute" aria-label="Mute audio">MUTE</button>
+          <button class="d-btn action-btn" id="btn-full" aria-label="Toggle fullscreen">FULL</button>
+        </div>
       </div>
-      <div class="d-pad-row"><button class="d-btn" id="btn-down" aria-label="Shoot down">▼</button></div>
+
+      <div class="mobile-cluster" id="mobile-dpad">
+        <div class="d-pad">
+          <div class="spacer" aria-hidden="true"></div>
+          <button class="d-btn" id="btn-up" aria-label="Shoot up">▲</button>
+          <div class="spacer" aria-hidden="true"></div>
+          <button class="d-btn" id="btn-left" aria-label="Shoot left">◄</button>
+          <div class="spacer" aria-hidden="true"></div>
+          <button class="d-btn" id="btn-right" aria-label="Shoot right">►</button>
+          <div class="spacer" aria-hidden="true"></div>
+          <button class="d-btn" id="btn-down" aria-label="Shoot down">▼</button>
+          <div class="spacer" aria-hidden="true"></div>
+        </div>
+      </div>
     </div>
   </div>
 
@@ -225,6 +318,12 @@
     const flashLine = document.getElementById('flashLine');
     const hud = document.getElementById('hud');
     const help = document.getElementById('help');
+    const btnStart = document.getElementById('btn-start');
+    const btnPause = document.getElementById('btn-pause');
+    const btnJump = document.getElementById('btn-jump');
+    const btnLine = document.getElementById('btn-line');
+    const btnMute = document.getElementById('btn-mute');
+    const btnFull = document.getElementById('btn-full');
 
     const MODE = {
       START: 'START',
@@ -742,7 +841,8 @@
         toX: 0,
         toY: 0,
         flies: 0
-      }
+      },
+      mobileJumpArmed: false
     };
 
     function isHindi() {
@@ -843,7 +943,34 @@
       helpControlLine.textContent = isHindi() ? 'ENTER: शुरू | P: रोकें | F: फुलस्क्रीन | M: म्यूट' : 'ENTER: START | P: PAUSE | F: FULLSCREEN | M: MUTE';
       helpMedLine.textContent = isHindi() ? 'X: औषधि लाइन शॉट' : 'X: MED LINE SHOT';
       updateAudioLine();
+      updateMobileControlsState();
       updateHud();
+    }
+
+    function clearMobileJumpArm() {
+      if (!state.mobileJumpArmed) return;
+      state.mobileJumpArmed = false;
+      updateMobileControlsState();
+    }
+
+    function updateMobileControlsState() {
+      if (!btnStart) return;
+      btnStart.textContent = isHindi()
+        ? ((state.mode === MODE.PLAYING || state.mode === MODE.PAUSED) ? 'फिर से' : 'शुरू')
+        : ((state.mode === MODE.PLAYING || state.mode === MODE.PAUSED) ? 'RESET' : 'START');
+      btnPause.textContent = isHindi()
+        ? (state.mode === MODE.PAUSED ? 'चलो' : 'रोकें')
+        : (state.mode === MODE.PAUSED ? 'GO' : 'PAUSE');
+      btnJump.textContent = isHindi() ? (state.mobileJumpArmed ? 'कूदो ●' : 'कूदो') : (state.mobileJumpArmed ? 'JUMP ●' : 'JUMP');
+      btnLine.textContent = isHindi() ? 'लाइन' : 'LINE';
+      btnMute.textContent = isHindi() ? (audioState.muted ? 'ध्वनि' : 'म्यूट') : (audioState.muted ? 'SOUND' : 'MUTE');
+      btnFull.textContent = isHindi() ? 'फुल' : 'FULL';
+
+      btnPause.classList.toggle('is-disabled', state.mode === MODE.START || state.mode === MODE.WIN || state.mode === MODE.GAME_OVER);
+      btnJump.classList.toggle('is-disabled', state.mode !== MODE.PLAYING || state.level < 3);
+      btnJump.classList.toggle('is-armed', state.mobileJumpArmed);
+      btnLine.classList.toggle('is-disabled', state.mode !== MODE.PLAYING || state.effects.medicinal <= 0);
+      btnMute.classList.toggle('is-armed', audioState.muted);
     }
 
     function toggleLanguage() {
@@ -981,6 +1108,7 @@
       audioState.muted = !audioState.muted;
       syncMasterGain();
       if (!audioState.muted) unlockAudio();
+      updateMobileControlsState();
     }
 
     function beep(config) {
@@ -2608,6 +2736,7 @@
       } else {
         questLine.textContent = getContextLine();
       }
+      updateMobileControlsState();
     }
 
     function saveHighScore() {
@@ -2765,6 +2894,7 @@
       state.medAim.toX = 0;
       state.medAim.toY = 0;
       state.medAim.flies = 0;
+      state.mobileJumpArmed = false;
       setLevel(1);
       updateHud();
     }
@@ -2913,6 +3043,7 @@
       if (state.mode !== MODE.PLAYING) return;
       if (state.level < 3) return;
       if (state.frog.jumpCooldown > 0) return;
+      clearMobileJumpArm();
       const v = getVector(dir);
       const jumpBoost = state.effects.loveJump > 0 ? 1.3 : 1;
       state.frog.vx += v.dx * 320 * jumpBoost;
@@ -2989,6 +3120,7 @@
     function togglePause() {
       if (state.mode === MODE.PLAYING) state.mode = MODE.PAUSED;
       else if (state.mode === MODE.PAUSED) state.mode = MODE.PLAYING;
+      if (state.mode !== MODE.PLAYING) clearMobileJumpArm();
       if (state.mode === MODE.PLAYING) startBitMusic();
       updateHud();
     }
@@ -5329,6 +5461,10 @@
           ev.preventDefault();
           unlockAudio();
           state.frog.facing = dir;
+          if (state.mobileJumpArmed && state.mode === MODE.PLAYING && state.level >= 3) {
+            triggerJump(dir);
+            return;
+          }
           if (canUseDirectionalSight(dir)) {
             handleNightVisionArrow(dir);
           } else {
@@ -5340,6 +5476,58 @@
         btn.addEventListener('touchstart', trigger, { passive: false });
         btn.addEventListener('mousedown', trigger);
       }
+
+      const bindActionButton = (btn, handler) => {
+        if (!btn) return;
+        const trigger = (ev) => {
+          ev.preventDefault();
+          unlockAudio();
+          handler();
+        };
+        btn.addEventListener('pointerdown', trigger);
+        btn.addEventListener('touchstart', trigger, { passive: false });
+        btn.addEventListener('mousedown', trigger);
+      };
+
+      bindActionButton(btnStart, () => {
+        clearPendingArrowShot();
+        clearMobileJumpArm();
+        if (state.mode === MODE.START || state.mode === MODE.GAME_OVER || state.mode === MODE.WIN) {
+          startGameFromMenu();
+        } else if (state.mode === MODE.PLAYING || state.mode === MODE.PAUSED) {
+          startGameFromMenu();
+        }
+      });
+
+      bindActionButton(btnPause, () => {
+        if (state.mode !== MODE.START && state.mode !== MODE.WIN && state.mode !== MODE.GAME_OVER) {
+          togglePause();
+        }
+      });
+
+      bindActionButton(btnJump, () => {
+        if (state.mode !== MODE.PLAYING || state.level < 3) return;
+        state.mobileJumpArmed = !state.mobileJumpArmed;
+        if (state.mobileJumpArmed) {
+          addFloatText(frogX(), frogY() - 84, isHindi() ? 'दिशा चुनो, फिर कूदो' : 'PICK A DIRECTION TO JUMP', '#d7ffd8');
+        }
+        updateMobileControlsState();
+      });
+
+      bindActionButton(btnLine, () => {
+        clearMobileJumpArm();
+        triggerMedicinalLineShot();
+      });
+
+      bindActionButton(btnMute, () => {
+        clearMobileJumpArm();
+        toggleMute();
+      });
+
+      bindActionButton(btnFull, () => {
+        clearMobileJumpArm();
+        toggleFullscreen();
+      });
 
       window.addEventListener('resize', resize);
       document.addEventListener('visibilitychange', () => {
@@ -5399,7 +5587,8 @@
           max_length: Number(tongue.maxLength.toFixed(1)),
           sticky_mode: state.effects.medicinal > 0,
           confused_curve: tongue.drunkShot,
-          med_line_active: state.medAim.active
+          med_line_active: state.medAim.active,
+          mobile_jump_armed: state.mobileJumpArmed
         },
         effects: {
           glow_s: Number(Math.max(0, state.effects.glow).toFixed(2)),
