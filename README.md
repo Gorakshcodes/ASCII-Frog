@@ -31,3 +31,20 @@ OPENAI_API_KEY=your_key_here
 OPENAI_MODEL=gpt-4o-mini
 PORT=3000
 ```
+
+## Deploy on Vercel
+
+This repo is prepared for Vercel with:
+
+- static frontend from [index.html](/Users/roop/Downloads/Reliafrog/index.html)
+- serverless API routes at [/api/health.js](/Users/roop/Downloads/Reliafrog/api/health.js) and [/api/director.js](/Users/roop/Downloads/Reliafrog/api/director.js)
+- local development server still available via [server.js](/Users/roop/Downloads/Reliafrog/server.js)
+
+In Vercel, add these environment variables:
+
+```env
+OPENAI_API_KEY=your_key_here
+OPENAI_MODEL=gpt-4o-mini
+```
+
+You do not need `PORT` on Vercel.
