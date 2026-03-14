@@ -32,6 +32,10 @@
       touch-action: none;
     }
 
+    html[lang="hi"] body {
+      font-family: "Nirmala UI", "Mangal", "Noto Sans Devanagari", sans-serif;
+    }
+
     #wrap {
       position: relative;
       width: 100vw;
@@ -93,6 +97,24 @@
     #help .line {
       font-size: 14px;
       opacity: 0.92;
+    }
+
+    #flashBar {
+      position: absolute;
+      left: 50%;
+      bottom: 14px;
+      transform: translateX(-50%);
+      min-width: 280px;
+      max-width: min(78vw, 760px);
+      text-align: center;
+      pointer-events: none;
+      z-index: 11;
+      opacity: 0;
+      transition: opacity 0.2s ease;
+    }
+
+    #flashBar.show {
+      opacity: 1;
     }
 
     #mobile-controls {
@@ -158,22 +180,20 @@
         <div class="line" id="scoreLine">SCORE 0</div>
         <div class="line" id="frogHealthLine">ASCII HP [##########] 100%</div>
         <div class="line" id="progressLine">PROGRESS [--------------] 0%</div>
-      </div>
-      <div class="panel">
-        <div class="line" id="status">READ THE SWAMP</div>
-        <div class="line line-soft" id="objectiveLine">OBJECTIVE: LEARN THE OPENING FLOW</div>
-        <div class="line line-soft" id="focusLine">FOCUS: PATTERN CUES</div>
-        <div class="line line-soft" id="contextLine">WORLD: NIGHT WATER</div>
-        <div class="line line-soft" id="rivalHealthLine">RIVAL: -</div>
+        <div class="line line-soft" id="questLine">FLOW: WATCH THE FIELD</div>
       </div>
     </div>
 
     <div id="help" class="panel">
-      <div class="line">ARROWS: SHOOT</div>
-      <div class="line">SPACE+ARROW: JUMP (L3+) | REVERSE: BRAKE</div>
-      <div class="line">ENTER: START | P: PAUSE | F: FULLSCREEN | M: MUTE</div>
-      <div class="line">X: MED LINE SHOT</div>
+      <div class="line" id="helpShootLine">ARROWS: SHOOT</div>
+      <div class="line" id="helpJumpLine">SPACE+ARROW: JUMP (L3+) | REVERSE: BRAKE</div>
+      <div class="line" id="helpControlLine">ENTER: START | P: PAUSE | F: FULLSCREEN | M: MUTE</div>
+      <div class="line" id="helpMedLine">X: MED LINE SHOT</div>
       <div class="line" id="audioLine">SOUND: TAP OR PRESS A KEY</div>
+    </div>
+
+    <div id="flashBar" class="panel">
+      <div class="line" id="flashLine">READ THE SWAMP</div>
     </div>
 
     <div id="mobile-controls" aria-label="Touch controls">
@@ -194,13 +214,15 @@
     const scoreLine = document.getElementById('scoreLine');
     const levelLine = document.getElementById('levelLine');
     const frogHealthLine = document.getElementById('frogHealthLine');
-    const rivalHealthLine = document.getElementById('rivalHealthLine');
     const progressLine = document.getElementById('progressLine');
-    const statusLine = document.getElementById('status');
-    const objectiveLine = document.getElementById('objectiveLine');
-    const focusLine = document.getElementById('focusLine');
-    const contextLine = document.getElementById('contextLine');
+    const questLine = document.getElementById('questLine');
     const audioLine = document.getElementById('audioLine');
+    const helpShootLine = document.getElementById('helpShootLine');
+    const helpJumpLine = document.getElementById('helpJumpLine');
+    const helpControlLine = document.getElementById('helpControlLine');
+    const helpMedLine = document.getElementById('helpMedLine');
+    const flashBar = document.getElementById('flashBar');
+    const flashLine = document.getElementById('flashLine');
     const hud = document.getElementById('hud');
     const help = document.getElementById('help');
 
@@ -259,6 +281,15 @@
         color: '#fff27f',
         points: 18,
         speed: 1.08,
+        radius: 18
+      },
+      hourglass: {
+        id: 'hourglass',
+        name: 'Hourglass Fly',
+        glyph: '}{',
+        color: '#bfeeff',
+        points: 22,
+        speed: 1.02,
         radius: 18
       },
       poison: {
@@ -348,7 +379,7 @@
         interval: 0.68,
         extraChance: 0.32,
         opening: 8,
-        pool: { normal: 0.48, grasshopper: 0.19, medicinal: 0.09, bomb: 0.13, firefly: 0.11 }
+        pool: { normal: 0.44, grasshopper: 0.18, medicinal: 0.08, bomb: 0.12, firefly: 0.1, hourglass: 0.08 }
       },
       {
         level: 6,
@@ -358,17 +389,17 @@
         interval: 0.63,
         extraChance: 0.35,
         opening: 8,
-        pool: { normal: 0.4, grasshopper: 0.18, medicinal: 0.08, bomb: 0.14, firefly: 0.1, poison: 0.1 }
+        pool: { normal: 0.36, grasshopper: 0.18, medicinal: 0.08, bomb: 0.14, firefly: 0.09, hourglass: 0.07, poison: 0.08 }
       },
       {
         level: 7,
-        intro: 'L7: BREAK THE MIRROR',
+        intro: 'L7: SPELL LOVE, THEN HOPE',
         goal: 1650,
-        cap: 14,
-        interval: 0.61,
-        extraChance: 0.36,
-        opening: 8,
-        pool: { normal: 0.32, grasshopper: 0.16, medicinal: 0.08, bomb: 0.14, firefly: 0.1, poison: 0.1, letter: 0.1 }
+        cap: 18,
+        interval: 0.46,
+        extraChance: 0.58,
+        opening: 12,
+        pool: { letter: 1 }
       },
       {
         level: 8,
@@ -378,7 +409,7 @@
         interval: 0.57,
         extraChance: 0.4,
         opening: 9,
-        pool: { normal: 0.28, grasshopper: 0.15, medicinal: 0.08, bomb: 0.14, firefly: 0.1, poison: 0.1, spiral: 0.15 }
+        pool: { normal: 0.24, grasshopper: 0.14, medicinal: 0.08, bomb: 0.13, firefly: 0.1, hourglass: 0.08, poison: 0.09, spiral: 0.14 }
       },
       {
         level: 9,
@@ -388,7 +419,7 @@
         interval: 0.52,
         extraChance: 0.44,
         opening: 10,
-        pool: { normal: 0.2, grasshopper: 0.15, medicinal: 0.08, bomb: 0.16, firefly: 0.11, poison: 0.1, spiral: 0.2 }
+        pool: { normal: 0.18, grasshopper: 0.14, medicinal: 0.08, bomb: 0.15, firefly: 0.1, hourglass: 0.08, poison: 0.09, spiral: 0.18 }
       },
       {
         level: 10,
@@ -398,7 +429,7 @@
         interval: 0.47,
         extraChance: 0.5,
         opening: 10,
-        pool: { normal: 0.16, grasshopper: 0.14, medicinal: 0.08, bomb: 0.17, firefly: 0.12, poison: 0.11, spiral: 0.22 }
+        pool: { normal: 0.14, grasshopper: 0.13, medicinal: 0.08, bomb: 0.16, firefly: 0.11, hourglass: 0.08, poison: 0.1, spiral: 0.2 }
       },
       {
         level: 11,
@@ -408,7 +439,7 @@
         interval: 0.43,
         extraChance: 0.56,
         opening: 12,
-        pool: { normal: 0.12, grasshopper: 0.14, medicinal: 0.08, bomb: 0.17, firefly: 0.13, poison: 0.12, spiral: 0.24 },
+        pool: { normal: 0.11, grasshopper: 0.13, medicinal: 0.08, bomb: 0.17, firefly: 0.13, hourglass: 0.08, poison: 0.1, spiral: 0.2 },
         rival: { type: 'bluefrog', name: 'BLUE FROG', target: 4300, speed: 1.05, aggression: 1 }
       },
       {
@@ -419,7 +450,7 @@
         interval: 0.34,
         extraChance: 0.68,
         opening: 14,
-        pool: { normal: 0.1, grasshopper: 0.14, medicinal: 0.08, bomb: 0.18, firefly: 0.12, poison: 0.14, spiral: 0.24 },
+        pool: { normal: 0.09, grasshopper: 0.13, medicinal: 0.08, bomb: 0.18, firefly: 0.11, hourglass: 0.08, poison: 0.13, spiral: 0.2 },
         rival: { type: 'chameleon', name: 'CHAMELEON', target: 5800, speed: 1.2, aggression: 1.35 },
         rival2: { type: 'bluefrog', name: 'BLUE FROG', target: 5800, speed: 1.1, aggression: 1.1 }
       }
@@ -432,12 +463,42 @@
       4: { title: 'GEOMETRY', objective: 'Use clean spacing and safe angles around danger.', cue: 'read the guide posts', world: 'measured pond' },
       5: { title: 'SEQUENCE', objective: 'Follow the glowing order instead of chasing noise.', cue: 'trace the firefly chain', world: 'ordered shimmer' },
       6: { title: 'TREND', objective: 'Adjust as the swamp slowly speeds up.', cue: 'read the rising tide bands', world: 'climbing pressure' },
-      7: { title: 'SYMMETRY', objective: 'Spot what breaks the mirror and commit there.', cue: 'watch the mirrored reeds', world: 'split marsh' },
+      7: { title: 'LOVE + HOPE', objective: 'Collect LOVE first, then complete HOPE in order.', cue: 'read the letters before you rush', world: 'letter bloom' },
       8: { title: 'MEMORY', objective: 'Memorize the reveal, then strike after it fades.', cue: 'hold the glow map in mind', world: 'mist memory' },
       9: { title: 'MULTI-PATTERN', objective: 'Track lanes and timing at the same time.', cue: 'balance pulse and direction', world: 'double current' },
       10: { title: 'DECEPTION', objective: 'Expect the rule to change once.', cue: 'trust, then re-check the field', world: 'false calm' },
       11: { title: 'TRADEOFF', objective: 'Choose safe value or risky value before the rival.', cue: 'read rival territory', world: 'duel marsh' },
       12: { title: 'SURVIVAL', objective: 'Stay ahead of bullets, bumps, and crowd pressure.', cue: 'read the corridor and keep moving', world: 'final corridor' }
+    };
+
+    const LEVEL_INTRO_HI = {
+      1: 'L1: बारी-बारी चाल पढ़ो',
+      2: 'L2: ताल की लय पकड़ो',
+      3: 'L3: हवा की राह समझो',
+      4: 'L4: सुरक्षित कोण थामो',
+      5: 'L5: क्रम का पीछा करो',
+      6: 'L6: चढ़ती लहर पढ़ो',
+      7: 'L7: पहले LOVE, फिर HOPE',
+      8: 'L8: चमक याद रखो',
+      9: 'L9: दो नियम साथ पकड़ो',
+      10: 'L10: झूठे बदलाव को देखो',
+      11: 'L11: प्रतिद्वंद्वी को मात दो',
+      12: 'L12: अंतिम भूलभुलैया में बचो'
+    };
+
+    const LEVEL_FOCUS_HI = {
+      1: { title: 'बदलती चाल', objective: 'दाएँ-बाएँ बदलाव पढ़ो, फिर ही झपटो।', cue: 'बदलते सरकंडों को देखो', world: 'दोहरी लय' },
+      2: { title: 'चक्र', objective: 'दोहराती लय की सही खिड़की में पकड़ो।', cue: 'लहर की ताल पर चलो', world: 'तालाब की धड़कन' },
+      3: { title: 'गति', objective: 'मक्खियाँ आने से पहले सही लेन में खड़े हो।', cue: 'हवा की राह पकड़ो', world: 'आड़ी हवा' },
+      4: { title: 'ज्यामिति', objective: 'खतरे के पास साफ दूरी और कोण रखो।', cue: 'मार्ग-खूंटों को पढ़ो', world: 'नापा हुआ ताल' },
+      5: { title: 'क्रम', objective: 'शोर नहीं, चमकते क्रम का पीछा करो।', cue: 'जुगनुओं की कड़ी पढ़ो', world: 'सजग चमक' },
+      6: { title: 'रुझान', objective: 'दलदल की बढ़ती रफ़्तार के साथ ढलते रहो।', cue: 'उठती धारियाँ पढ़ो', world: 'चढ़ता दबाव' },
+      7: { title: 'LOVE + HOPE', objective: 'पहले LOVE, फिर HOPE को क्रम से पूरा करो।', cue: 'भागने से पहले अक्षर पढ़ो', world: 'अक्षर वर्षा' },
+      8: { title: 'स्मृति', objective: 'झलक याद रखो, फिर उसके मिटने पर वार करो।', cue: 'चमकते नक्शे को मन में रखो', world: 'धुंध स्मृति' },
+      9: { title: 'मिश्रित पैटर्न', objective: 'दिशा और समय दोनों को साथ साधो।', cue: 'लय और दिशा संतुलित करो', world: 'दोहरी धारा' },
+      10: { title: 'छल', objective: 'एक बार नियम बदलने की उम्मीद रखो।', cue: 'भरो, फिर दोबारा जाँचो', world: 'झूठी शांति' },
+      11: { title: 'जोखिम-लाभ', objective: 'प्रतिद्वंद्वी से पहले सुरक्षित या जोखिम भरा लाभ चुनो।', cue: 'राइवल की ज़मीन पढ़ो', world: 'द्वंद्व दलदल' },
+      12: { title: 'अंतिम बचाव', objective: 'गोली, धक्के और भीड़ से आगे बने रहो।', cue: 'गलियारा पढ़ो और चलते रहो', world: 'अंतिम राह' }
     };
 
     const state = {
@@ -447,6 +508,7 @@
       cy: 0,
       dpr: 1,
       mode: MODE.START,
+      language: 'en',
       score: 0,
       highScore: Number(localStorage.getItem('ascii-frog-high-score') || 0),
       level: 1,
@@ -476,19 +538,30 @@
       shakeTimer: 0,
       showCheatSheet: false,
       quest: {
-        target: 'ASCIIFROG',
-        label: 'ASCII FROG',
+        target: 'LOVE',
+        label: 'LOVE',
         active: false,
         completed: false,
         progress: 0,
-        reward: 450
+        reward: 550,
+        words: ['LOVE', 'HOPE'],
+        wordIndex: 0,
+        spawnCycle: 0,
+        timer: 0,
+        duration: 28,
+        timedOut: false
       },
       effects: {
         glow: 0,
         drunk: 0,
         spiral: 0,
         medicinal: 0,
-        timeFreeze: 0
+        timeFreeze: 0,
+        nightVision: 0,
+        loveJump: 0,
+        loveRain: 0,
+        hopeHalo: 0,
+        hopeGiant: 0
       },
       health: {
         frog: 100,
@@ -509,6 +582,8 @@
         lightningChance: 0,
         lightningTimer: 0,
         lightningX: 0,
+        darkness: 0,
+        baseDarkness: 0,
         particles: []
       },
       aiDirector: {
@@ -534,6 +609,7 @@
           rivalTongueRateScale: 1,
           weatherWindScale: 1,
           weatherLightningScale: 1,
+          weatherDarknessScale: 1,
           weatherRainMode: 'keep',
           weatherSnowMode: 'keep',
           weatherHighWindMode: 'keep'
@@ -549,6 +625,11 @@
         landSquash: 0,
         facing: 'RIGHT',
         jumpCooldown: 0
+      },
+      directionalSight: {
+        timer: 0,
+        dir: 'RIGHT',
+        armed: false
       },
       sweep: {
         active: false,
@@ -664,6 +745,132 @@
       }
     };
 
+    function isHindi() {
+      return state.language === 'hi';
+    }
+
+    function uiFont(size, weight = 700) {
+      return isHindi()
+        ? `${weight} ${size}px "Nirmala UI", "Mangal", "Noto Sans Devanagari", sans-serif`
+        : `${weight} ${size}px "Courier Prime", monospace`;
+    }
+
+    function getLevelFocus(level = state.level) {
+      const focus = LEVEL_FOCUS[level] || LEVEL_FOCUS[1];
+      if (!isHindi()) return focus;
+      return LEVEL_FOCUS_HI[level] || LEVEL_FOCUS_HI[1];
+    }
+
+    function getLevelIntro(level = state.level) {
+      const cfg = LEVELS.find((entry) => entry.level === level) || LEVELS[0];
+      return isHindi() ? (LEVEL_INTRO_HI[level] || cfg.intro) : cfg.intro;
+    }
+
+    function getRivalShortName(rv) {
+      const source = (rv.name || '').toUpperCase();
+      if (!isHindi()) return source.split(' ')[0] || source;
+      if (source.includes('CHAMELEON')) return 'गिरगिट';
+      if (source.includes('BLUE')) return 'नीला मेंढक';
+      return source;
+    }
+
+    function getLocalizedDirection(dir) {
+      const map = { UP: 'ऊपर', DOWN: 'नीचे', LEFT: 'बाएँ', RIGHT: 'दाएँ' };
+      return isHindi() ? (map[dir] || dir) : dir;
+    }
+
+    function getLocalizedEnvironmentName(name) {
+      if (!isHindi()) return name;
+      const map = {
+        SWAMP: 'दलदल',
+        REEDS: 'सरकंडे',
+        'MOON POND': 'चाँद ताल',
+        'EMBER BOG': 'अंगार दलदल',
+        'NEON MARSH': 'नियोन दलदल'
+      };
+      return map[name] || name;
+    }
+
+    function getLocalizedWeatherName(name) {
+      if (!isHindi()) return name;
+      const map = {
+        'SWAMP MIRROR': 'दलदल आईना',
+        'RIPPLE WIND': 'लहराती हवा',
+        'CROSS CURRENT': 'आड़ी धारा',
+        'STILL POND': 'शांत ताल',
+        'ORDERED GLOW': 'सजी चमक',
+        'RISING TIDE': 'उठती लहर',
+        'MIRROR MARSH': 'आईना दलदल',
+        'MEMORY FOG': 'स्मृति धुंध',
+        'DOUBLE CURRENT': 'दोहरी धारा',
+        'FALSE CALM': 'झूठी शांति',
+        'DUEL MARSH': 'द्वंद्व दलदल',
+        'FINAL CORRIDOR': 'अंतिम गलियारा'
+      };
+      return map[name] || name;
+    }
+
+    function getHindiCatchText(fly, gained) {
+      const table = {
+        normal: `धूम! +${gained}`,
+        grasshopper: `झपाक! +${gained}`,
+        bomb: 'धड़ाम!',
+        firefly: `चमक! +${gained}`,
+        hourglass: 'टिक-टिक थम!',
+        poison: 'अरे बाप रे!',
+        spiral: `घूम-धड़ाम! +${gained}`,
+        letter: `वाह! +${gained}`,
+        medicinal: 'क्या बात है!'
+      };
+      return table[fly.id] || `धूम! +${gained}`;
+    }
+
+    function getHindiRivalEvent(name, kind) {
+      const label = name && name.toUpperCase().includes('CHAMELEON') ? 'गिरगिट' : 'नीला मेंढक';
+      if (kind === 'bump') return `${label} धड़ाम!`;
+      if (kind === 'hit') return `${label} ने वार किया!`;
+      if (kind === 'tongue') return `${label} की जीभ लगी!`;
+      if (kind === 'wins') return `${label} बाज़ी ले गया`;
+      if (kind === 'defeated') return `${label} ढेर हुआ`;
+      if (kind === 'score') return `${label} +`;
+      return label;
+    }
+
+    function updateLanguageUi() {
+      document.documentElement.lang = state.language;
+      helpShootLine.textContent = isHindi() ? 'तीर: जीभ चलाओ' : 'ARROWS: SHOOT';
+      helpJumpLine.textContent = isHindi() ? 'SPACE+तीर: छलांग (L3+) | उल्टा दबाओ: ब्रेक' : 'SPACE+ARROW: JUMP (L3+) | REVERSE: BRAKE';
+      helpControlLine.textContent = isHindi() ? 'ENTER: शुरू | P: रोकें | F: फुलस्क्रीन | M: म्यूट' : 'ENTER: START | P: PAUSE | F: FULLSCREEN | M: MUTE';
+      helpMedLine.textContent = isHindi() ? 'X: औषधि लाइन शॉट' : 'X: MED LINE SHOT';
+      updateAudioLine();
+      updateHud();
+    }
+
+    function toggleLanguage() {
+      state.language = isHindi() ? 'en' : 'hi';
+      if (state.mode === MODE.START || state.levelIntroTimer > 0) {
+        state.levelIntroText = getLevelIntro(state.level);
+      }
+      updateLanguageUi();
+    }
+
+    function getLanguageToggleRect() {
+      return { x: state.cx - 75, y: 18, w: 150, h: 38 };
+    }
+
+    function maybeHandleStartScreenPointer(ev) {
+      if (state.mode !== MODE.START) return false;
+      const rect = getLanguageToggleRect();
+      const bounds = canvas.getBoundingClientRect();
+      const x = (ev.clientX ?? 0) - bounds.left;
+      const y = (ev.clientY ?? 0) - bounds.top;
+      if (x >= rect.x && x <= rect.x + rect.w && y >= rect.y && y <= rect.y + rect.h) {
+        toggleLanguage();
+        return true;
+      }
+      return false;
+    }
+
     const keysDown = new Set();
     let pendingArrowTimer = null;
     let pendingArrowCode = '';
@@ -685,11 +892,17 @@
       mode: '',
       step: 0,
       tempoMs: 155,
+      rivalTempoMs: 112,
       winTempoMs: 132,
       lead: [392.0, 523.25, 659.25, 587.33, 440.0, 523.25, 698.46, 587.33],
       bass: [196.0, 196.0, 220.0, 220.0, 174.61, 174.61, 196.0, 196.0],
+      rivalLead: [523.25, 659.25, 783.99, 698.46, 659.25, 880.0, 783.99, 698.46],
+      rivalBass: [196.0, 220.0, 246.94, 220.0, 196.0, 246.94, 220.0, 196.0],
       loveLead: [392.0, 440.0, 523.25, 587.33, 659.25, 587.33, 523.25, 440.0],
       loveBass: [146.83, 164.81, 174.61, 196.0, 174.61, 164.81, 146.83, 130.81],
+      congratsLead: [783.99, 1046.5, 1174.66, 1318.51, 1174.66, 1567.98, 1318.51, 1046.5],
+      congratsBass: [196.0, 246.94, 293.66, 246.94, 220.0, 293.66, 246.94, 220.0],
+      congratsSpark: [1567.98, 1760.0, 2093.0, 1760.0],
       winLead: [523.25, 659.25, 783.99, 1046.5, 783.99, 1174.66, 1046.5, 783.99],
       winBass: [130.81, 130.81, 146.83, 174.61, 196.0, 174.61, 164.81, 146.83],
       winSpark: [1046.5, 1318.51, 1567.98, 1318.51]
@@ -717,26 +930,26 @@
 
     function updateAudioLine() {
       if (audioState.unavailable) {
-        audioLine.textContent = 'SOUND: NOT SUPPORTED';
+        audioLine.textContent = isHindi() ? 'ध्वनि: उपलब्ध नहीं' : 'SOUND: NOT SUPPORTED';
         return;
       }
       if (!audioCtx) {
-        audioLine.textContent = 'SOUND: TAP OR PRESS A KEY';
+        audioLine.textContent = isHindi() ? 'ध्वनि: टैप करो या कोई कुंजी दबाओ' : 'SOUND: TAP OR PRESS A KEY';
         return;
       }
       if (audioState.muted) {
-        audioLine.textContent = 'SOUND: MUTED (PRESS M)';
+        audioLine.textContent = isHindi() ? 'ध्वनि: म्यूट (M दबाओ)' : 'SOUND: MUTED (PRESS M)';
         return;
       }
       if (audioCtx.state === 'running') {
-        audioLine.textContent = 'SOUND: ON';
+        audioLine.textContent = isHindi() ? 'ध्वनि: चालू' : 'SOUND: ON';
         return;
       }
       if (audioCtx.state === 'suspended') {
-        audioLine.textContent = 'SOUND: BLOCKED, TAP OR PRESS A KEY';
+        audioLine.textContent = isHindi() ? 'ध्वनि: रुकी है, टैप करो या कुंजी दबाओ' : 'SOUND: BLOCKED, TAP OR PRESS A KEY';
         return;
       }
-      audioLine.textContent = `SOUND: ${audioCtx.state.toUpperCase()}`;
+      audioLine.textContent = isHindi() ? `ध्वनि: ${audioCtx.state.toUpperCase()}` : `SOUND: ${audioCtx.state.toUpperCase()}`;
     }
 
     function syncMasterGain() {
@@ -816,6 +1029,10 @@
         playSound('eatFirefly');
         return;
       }
+      if (fly.id === 'hourglass') {
+        playSound('eatHourglass');
+        return;
+      }
       if (fly.id === 'poison') {
         playSound('eatPoison');
         return;
@@ -838,8 +1055,8 @@
     function startBitMusic() {
       unlockAudio();
       if (!audioCtx) return;
-      const nextMode = state.mode === MODE.WIN ? 'WIN' : 'GAME';
-      const nextTempo = nextMode === 'WIN' ? music.winTempoMs : music.tempoMs;
+      const nextMode = state.mode === MODE.WIN ? 'WIN' : (state.mode === MODE.PLAYING && activeRivals().length > 0 ? 'RIVAL' : 'GAME');
+      const nextTempo = nextMode === 'WIN' ? music.winTempoMs : (nextMode === 'RIVAL' ? music.rivalTempoMs : music.tempoMs);
       if (music.timer && music.mode === nextMode) return;
       if (music.timer) {
         window.clearInterval(music.timer);
@@ -849,7 +1066,7 @@
       music.step = 0;
       music.timer = window.setInterval(() => {
         if (![MODE.START, MODE.PLAYING, MODE.WIN].includes(state.mode)) return;
-        const liveMode = state.mode === MODE.WIN ? 'WIN' : 'GAME';
+        const liveMode = state.mode === MODE.WIN ? 'WIN' : (state.mode === MODE.PLAYING && activeRivals().length > 0 ? 'RIVAL' : 'GAME');
         if (liveMode !== music.mode) {
           window.clearInterval(music.timer);
           music.timer = null;
@@ -857,23 +1074,47 @@
           return;
         }
         if (state.mode === MODE.WIN) {
-          const i = music.step % music.winLead.length;
-          const j = music.step % music.winBass.length;
-          const s = music.step % music.winSpark.length;
+          if (state.ending.timer < getEndingCelebrationDuration()) {
+            const i = music.step % music.congratsLead.length;
+            const j = music.step % music.congratsBass.length;
+            const s = music.step % music.congratsSpark.length;
+            playBitNote(music.congratsLead[i], 0.16, 0.018, 'square');
+            if (music.step % 2 === 0) {
+              playBitNote(music.congratsBass[j], 0.2, 0.012, 'triangle');
+            }
+            if (music.step % 4 === 1) {
+              playBitNote(music.congratsSpark[s], 0.07, 0.01, 'square');
+            }
+            if (music.step % 8 === 5) {
+              playBitNote(music.loveLead[i % music.loveLead.length] * 1.5, 0.08, 0.008, 'triangle');
+            }
+          } else {
+            const i = music.step % music.winLead.length;
+            const j = music.step % music.winBass.length;
+            const s = music.step % music.winSpark.length;
+            if (music.step % 2 === 0) {
+              playBitNote(music.winLead[i], 0.19, 0.014, 'square');
+            }
+            if (music.step % 4 === 0) {
+              playBitNote(music.winBass[j], 0.24, 0.01, 'triangle');
+            }
+            if (music.step % 8 === 2) {
+              playBitNote(music.loveLead[i % music.loveLead.length], 0.12, 0.008, 'triangle');
+            }
+            if (music.step % 8 === 6) {
+              playBitNote(music.winSpark[s], 0.08, 0.007, 'square');
+            }
+            if (music.step % 16 === 10) {
+              playBitNote(music.loveLead[i] * 1.25, 0.11, 0.006, 'triangle');
+            }
+          }
+        } else if (state.mode === MODE.PLAYING && activeRivals().length > 0) {
+          const i = music.step % music.rivalLead.length;
+          const j = music.step % music.rivalBass.length;
+          playBitNote(music.rivalLead[i], 0.08, 0.022, 'square');
+          playBitNote(music.rivalBass[j], 0.11, 0.012, 'triangle');
           if (music.step % 2 === 0) {
-            playBitNote(music.winLead[i], 0.19, 0.014, 'square');
-          }
-          if (music.step % 4 === 0) {
-            playBitNote(music.winBass[j], 0.24, 0.01, 'triangle');
-          }
-          if (music.step % 8 === 2) {
-            playBitNote(music.loveLead[i % music.loveLead.length], 0.12, 0.008, 'triangle');
-          }
-          if (music.step % 8 === 6) {
-            playBitNote(music.winSpark[s], 0.08, 0.007, 'square');
-          }
-          if (music.step % 16 === 10) {
-            playBitNote(music.loveLead[i] * 1.25, 0.11, 0.006, 'triangle');
+            playBitNote(music.rivalLead[i] * 1.5, 0.04, 0.009, 'square');
           }
         } else {
           const i = music.step % music.lead.length;
@@ -904,6 +1145,10 @@
         beep({ type: 'triangle', from: 900, to: 1220, duration: 0.06, gain: 0.042 });
         window.setTimeout(() => beep({ type: 'triangle', from: 1220, to: 1640, duration: 0.05, gain: 0.038 }), 24);
         window.setTimeout(() => beep({ type: 'square', from: 1640, to: 1900, duration: 0.04, gain: 0.03 }), 58);
+      } else if (kind === 'eatHourglass') {
+        beep({ type: 'triangle', from: 740, to: 880, duration: 0.05, gain: 0.04 });
+        window.setTimeout(() => beep({ type: 'square', from: 1120, to: 920, duration: 0.05, gain: 0.034 }), 44);
+        window.setTimeout(() => beep({ type: 'triangle', from: 880, to: 1040, duration: 0.06, gain: 0.03 }), 88);
       } else if (kind === 'eatPoison') {
         beep({ type: 'square', from: 640, to: 560, duration: 0.05, gain: 0.042 });
         window.setTimeout(() => beep({ type: 'square', from: 560, to: 720, duration: 0.06, gain: 0.036 }), 36);
@@ -1007,9 +1252,24 @@
       };
     }
 
+    function getEndingCelebrationDuration() {
+      return 5.6;
+    }
+
+    function getEndingCelebrationFadeWindow() {
+      return 1.5;
+    }
+
+    function getEndingCelebrationBlend() {
+      const start = getEndingCelebrationDuration() - getEndingCelebrationFadeWindow();
+      if (state.ending.timer <= start) return 1;
+      return clamp((getEndingCelebrationDuration() - state.ending.timer) / getEndingCelebrationFadeWindow(), 0, 1);
+    }
+
     function getEndingStarryBlend() {
+      const introS = getEndingCelebrationDuration();
       const cycleS = 28;
-      const t = state.ending.timer % cycleS;
+      const t = Math.max(0, state.ending.timer - introS) % cycleS;
       if (t < 7) return 0;
       if (t < 11) return (t - 7) / 4;
       if (t < 17) return 1;
@@ -1017,8 +1277,77 @@
       return 0;
     }
 
+    function getEndingPhase() {
+      if (state.ending.timer < getEndingCelebrationDuration()) return 'CELEBRATION';
+      return getEndingScene();
+    }
+
     function getEndingScene() {
       return getEndingStarryBlend() >= 0.5 ? 'STARRY' : 'HEARTS';
+    }
+
+    function getDirectionUnit(dirName) {
+      const dirs = {
+        UP: { x: 0, y: -1 },
+        DOWN: { x: 0, y: 1 },
+        LEFT: { x: -1, y: 0 },
+        RIGHT: { x: 1, y: 0 },
+        UP_LEFT: { x: -Math.SQRT1_2, y: -Math.SQRT1_2 },
+        UP_RIGHT: { x: Math.SQRT1_2, y: -Math.SQRT1_2 },
+        DOWN_LEFT: { x: -Math.SQRT1_2, y: Math.SQRT1_2 },
+        DOWN_RIGHT: { x: Math.SQRT1_2, y: Math.SQRT1_2 }
+      };
+      return dirs[dirName] || dirs.RIGHT;
+    }
+
+    function canUseDirectionalSight(dirName) {
+      return state.mode === MODE.PLAYING
+        && !String(dirName || '').includes('_')
+        && state.level >= 11
+        && activeRivals().length > 0
+        && state.weather.darkness > 0.38
+        && state.effects.nightVision > 0;
+    }
+
+    function primeDirectionalSight(dirName, timer = 0.58) {
+      state.directionalSight.dir = dirName || state.frog.facing || 'RIGHT';
+      state.directionalSight.timer = Math.max(state.directionalSight.timer, timer);
+    }
+
+    function getDirectionalSightBoost(x, y) {
+      if (state.directionalSight.timer <= 0 || state.effects.nightVision <= 0 || state.weather.darkness <= 0.2) return 0;
+      if (!Number.isFinite(x) || !Number.isFinite(y)) return 0;
+      const dx = x - frogX();
+      const dy = y - frogY();
+      const dist = Math.hypot(dx, dy);
+      if (dist <= 2 || dist > 440) return 0;
+      const dir = getDirectionUnit(state.directionalSight.dir || state.frog.facing || 'RIGHT');
+      const dot = (dx * dir.x + dy * dir.y) / dist;
+      if (dot < 0.42) return 0;
+      const cone = clamp((dot - 0.42) / 0.58, 0, 1);
+      const reach = clamp(1 - dist / 440, 0, 1);
+      const timerFactor = clamp(state.directionalSight.timer / 0.58, 0.2, 1);
+      return clamp((cone * 0.82 + reach * 0.18) * timerFactor, 0, 1);
+    }
+
+    function getVisibilityFactor(kind = 'default', x = NaN, y = NaN) {
+      const darkness = clamp(state.weather.darkness || 0, 0, 0.72);
+      if (darkness <= 0.01) return 1;
+      let base = 1;
+      if (kind === 'firefly') {
+        base = clamp(0.92 + darkness * 0.34, 0.92, 1.25);
+      } else if (kind === 'frog') {
+        base = clamp(1 - darkness * 0.06, 0.94, 1);
+      } else if (kind === 'rival') {
+        base = clamp(1 - darkness * 1.22, 0.05, 1);
+      } else {
+        base = clamp(1 - darkness * 1.34, 0.04, 1);
+      }
+      if (kind === 'frog') return base;
+      const sightBoost = getDirectionalSightBoost(x, y);
+      const boostScale = kind === 'rival' ? 0.54 : 0.66;
+      const hi = kind === 'firefly' ? 1.25 : 1;
+      return clamp(base + sightBoost * boostScale, 0.2, hi);
     }
 
     function getEndingLayout() {
@@ -1093,12 +1422,15 @@
     }
 
     function pickQuestLetter() {
-      const target = state.quest.target;
+      const target = state.quest.target || 'LOVE';
       const expected = target[state.quest.progress] || target[0];
-      if (Math.random() < 0.68) return expected;
-      const alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
-      const source = `${target}${alphabet}`;
-      return source[Math.floor(Math.random() * source.length)];
+      const cycle = state.quest.spawnCycle;
+      const cycleLetter = target[cycle % Math.max(1, target.length)];
+      state.quest.spawnCycle += 1;
+      if (cycle < target.length * 2) return cycleLetter;
+      if (Math.random() < 0.58) return expected;
+      if (Math.random() < 0.88) return cycleLetter;
+      return target[Math.floor(Math.random() * target.length)];
     }
 
     class Fly {
@@ -1119,6 +1451,7 @@
           grasshopper: [1.2, 1.45, 0.014],
           bomb: [0.78, 0.95, 0.01],
           firefly: [0.98, 1.15, 0.012],
+          hourglass: [0.94, 1.08, 0.011],
           poison: [1.02, 1.24, 0.013],
           spiral: [1.1, 1.34, 0.014],
           letter: [1.05, 1.22, 0.012],
@@ -1218,6 +1551,14 @@
             this.x += Math.cos(this.heading) * forward + Math.cos(this.heading + Math.PI / 2) * side;
             this.y += Math.sin(this.heading) * forward + Math.sin(this.heading + Math.PI / 2) * side;
           }
+        } else if (this.id === 'hourglass') {
+          this.orbit += dt * 1.3;
+          const target = targetAngle + Math.sin(this.orbit * 0.7) * 0.3;
+          this.heading = lerpAngle(this.heading, target, 0.024);
+          const wobble = Math.sin(this.orbit * 3.4) * 1.15;
+          const glide = this.speed * aiFlySpeedScale * 39 * dt;
+          this.x += Math.cos(this.heading) * glide + Math.cos(this.heading + Math.PI / 2) * wobble;
+          this.y += Math.sin(this.heading) * glide + Math.sin(this.orbit * 2.6) * 1.2;
         } else if (this.id === 'poison') {
           if (Math.random() < 0.03) {
             this.heading += (Math.random() - 0.5) * 0.9;
@@ -1290,6 +1631,7 @@
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
         ctx.font = '700 20px "Courier Prime", monospace';
+        const visibility = getVisibilityFactor(this.id === 'firefly' ? 'firefly' : 'default', this.x, this.y);
 
         if (this.camouflaged) {
           ctx.save();
@@ -1305,57 +1647,89 @@
         }
 
         if (this.id === 'normal') {
+          ctx.globalAlpha = visibility;
           ctx.fillStyle = this.color;
           const wings = state.frame % 10 < 5 ? '~' : '-';
           ctx.fillText(`${wings}${this.def.glyph}${wings}`, this.x, this.y);
+          ctx.globalAlpha = 1;
           return;
         }
 
         if (this.id === 'grasshopper') {
+          ctx.globalAlpha = visibility;
           ctx.fillStyle = this.color;
           const body = this.bursting ? '/h\\' : '-h-';
           ctx.fillText(body, this.x, this.y);
+          ctx.globalAlpha = 1;
           return;
         }
 
         if (this.id === 'bomb') {
+          ctx.globalAlpha = visibility;
           ctx.fillStyle = state.frame % 20 < 10 ? '#ff7575' : '#ffcaca';
           const center = state.frame % 12 < 6 ? '*' : 'X';
           ctx.fillText(`[${center}]`, this.x, this.y);
+          ctx.globalAlpha = 1;
           return;
         }
 
         if (this.id === 'firefly') {
+          ctx.save();
+          ctx.globalAlpha = Math.min(1, visibility);
+          ctx.shadowBlur = state.weather.darkness > 0.08 ? 16 + state.weather.darkness * 22 : 8;
+          ctx.shadowColor = state.frame % 16 < 8 ? '#fff8a8' : '#ffe867';
           ctx.fillStyle = state.frame % 16 < 8 ? '#fff8a8' : '#ffe867';
           ctx.fillText(`{${state.frame % 16 < 8 ? 'o' : '*'}}`, this.x, this.y);
+          ctx.restore();
+          return;
+        }
+
+        if (this.id === 'hourglass') {
+          ctx.save();
+          ctx.globalAlpha = visibility;
+          ctx.fillStyle = '#d8f4ff';
+          const top = state.frame % 18 < 9 ? '{^}' : '{ }';
+          const bottom = state.frame % 18 < 9 ? '{_}' : '{=}';
+          ctx.fillText(top, this.x, this.y - 7);
+          ctx.fillStyle = '#8fd8ff';
+          ctx.fillText(bottom, this.x, this.y + 7);
+          ctx.restore();
           return;
         }
 
         if (this.id === 'poison') {
+          ctx.globalAlpha = visibility;
           ctx.fillStyle = this.color;
           ctx.fillText(state.frame % 14 < 7 ? '!p!' : ':p:', this.x, this.y);
+          ctx.globalAlpha = 1;
           return;
         }
 
         if (this.id === 'spiral') {
+          ctx.globalAlpha = visibility;
           ctx.fillStyle = this.color;
           const chars = ['@', '&', '8', '@'];
           ctx.fillText(`${chars[state.frame % chars.length]}${chars[(state.frame + 1) % chars.length]}`, this.x, this.y);
+          ctx.globalAlpha = 1;
           return;
         }
 
         if (this.id === 'letter') {
+          ctx.globalAlpha = visibility;
           ctx.fillStyle = '#e6f5ff';
           ctx.fillText(`[${this.letter}]`, this.x, this.y);
+          ctx.globalAlpha = 1;
           return;
         }
 
         if (this.id === 'medicinal') {
+          ctx.globalAlpha = visibility;
           ctx.fillStyle = '#ffd95a';
           ctx.fillText('(', this.x - 10, this.y);
           ctx.fillText(')', this.x + 10, this.y);
           ctx.fillStyle = '#ff3f3f';
           ctx.fillText('M', this.x, this.y);
+          ctx.globalAlpha = 1;
           return;
         }
       }
@@ -1482,13 +1856,34 @@
       pendingArrowCode = '';
     }
 
+    function handleNightVisionArrow(dir) {
+      clearPendingArrowShot();
+      state.frog.facing = dir;
+      if (state.directionalSight.armed && state.directionalSight.timer > 0) {
+        state.directionalSight.dir = dir;
+        state.directionalSight.timer = 0.34;
+        state.directionalSight.armed = false;
+        shootTongue(dir);
+        return;
+      }
+      state.directionalSight.dir = dir;
+      state.directionalSight.timer = 0.86;
+      state.directionalSight.armed = true;
+    }
+
     function queueArrowShot(primaryCode) {
       const dir = getArrowShotDirection(primaryCode);
+      if (canUseDirectionalSight(dir)) {
+        handleNightVisionArrow(dir);
+        return;
+      }
       if (dir.includes('_')) {
+        state.directionalSight.armed = false;
         clearPendingArrowShot();
         shootTongue(dir);
         return;
       }
+      state.directionalSight.armed = false;
       clearPendingArrowShot();
       pendingArrowCode = primaryCode;
       pendingArrowTimer = setTimeout(() => {
@@ -1510,6 +1905,7 @@
         medicinal: 3,
         bomb: 4,
         firefly: 5,
+        hourglass: 5,
         poison: 6,
         letter: 7,
         spiral: 8
@@ -1553,6 +1949,7 @@
       state.aiDirector.runtime.rivalTongueRateScale = 1;
       state.aiDirector.runtime.weatherWindScale = 1;
       state.aiDirector.runtime.weatherLightningScale = 1;
+      state.aiDirector.runtime.weatherDarknessScale = 1;
       state.aiDirector.runtime.weatherRainMode = 'keep';
       state.aiDirector.runtime.weatherSnowMode = 'keep';
       state.aiDirector.runtime.weatherHighWindMode = 'keep';
@@ -1576,6 +1973,7 @@
         environment: {
           windScale: clamp(Number(env.wind_scale || 1), 0.55, 1.6),
           lightningScale: clamp(Number(env.lightning_scale || 1), 0.5, 2.1),
+          darknessScale: clamp(Number(env.darkness_scale || 1), 0.35, 1.8),
           rainMode: ['keep', 'on', 'off'].includes(env.rain_mode) ? env.rain_mode : 'keep',
           snowMode: ['keep', 'on', 'off'].includes(env.snow_mode) ? env.snow_mode : 'keep',
           highWindMode: ['keep', 'on', 'off'].includes(env.high_wind_mode) ? env.high_wind_mode : 'keep'
@@ -1618,6 +2016,7 @@
       state.aiDirector.runtime.rivalTongueRateScale = d.rivals.tongueRateScale;
       state.aiDirector.runtime.weatherWindScale = d.environment.windScale;
       state.aiDirector.runtime.weatherLightningScale = d.environment.lightningScale;
+      state.aiDirector.runtime.weatherDarknessScale = d.environment.darknessScale;
       state.aiDirector.runtime.weatherRainMode = d.environment.rainMode;
       state.aiDirector.runtime.weatherSnowMode = d.environment.snowMode;
       state.aiDirector.runtime.weatherHighWindMode = d.environment.highWindMode;
@@ -1634,6 +2033,7 @@
         environment: {
           wind_scale: heavy ? 1.25 : (safe ? 0.78 : 1),
           lightning_scale: clamp(0.9 + pressure * 0.6, 0.6, 1.9),
+          darkness_scale: state.level >= 11 ? (safe ? 0.74 : (heavy ? 1.2 : 1)) : 1,
           rain_mode: state.level >= 4 && Math.random() < 0.15 ? 'on' : 'keep',
           snow_mode: state.level >= 8 && Math.random() < 0.1 ? 'on' : 'keep',
           high_wind_mode: heavy ? 'on' : 'keep'
@@ -1647,6 +2047,7 @@
             grasshopper: clamp(0.16 + pressure * 0.05, 0.1, 0.25),
             bomb: clamp(0.08 + pressure * 0.08, 0.03, 0.22),
             firefly: clamp(0.07 + (safe ? 0.08 : 0), 0.05, 0.2),
+            hourglass: clamp(0.06 + (safe ? 0.07 : 0), 0.04, 0.16),
             poison: clamp(0.06 + pressure * 0.05, 0.03, 0.18),
             spiral: clamp(0.08 + pressure * 0.06, 0.03, 0.24),
             medicinal: clamp(0.06 + (safe ? 0.06 : 0), 0.04, 0.18),
@@ -1684,7 +2085,9 @@
         effects: {
           glow: Number(state.effects.glow.toFixed(2)),
           poison: Number(state.effects.drunk.toFixed(2)),
-          freeze: Number(state.effects.timeFreeze.toFixed(2))
+          freeze: Number(state.effects.timeFreeze.toFixed(2)),
+          night_vision: Number(state.effects.nightVision.toFixed(2)),
+          directional_sight: Number(state.directionalSight.timer.toFixed(2))
         },
         rivals: activeRivals().map((rv) => ({
           type: rv.type,
@@ -1695,7 +2098,8 @@
           rain: state.weather.rain,
           snow: state.weather.snow,
           high_wind: state.weather.highWind,
-          wind_x: Number(state.weather.windX.toFixed(2))
+          wind_x: Number(state.weather.windX.toFixed(2)),
+          darkness: Number(state.weather.darkness.toFixed(2))
         }
       };
     }
@@ -1751,6 +2155,9 @@
     }
 
     function activeSpawnPool() {
+      if (state.quest.active && !state.quest.completed && state.level === 7) {
+        return { letter: 1 };
+      }
       const basePool = state.aiDirector.runtime.poolOverrides || currentConfig().pool;
       const filtered = {};
       let total = 0;
@@ -1773,7 +2180,8 @@
       if (mastery < 0.55) {
         if (filtered.normal) filtered.normal *= 1.22;
         if (filtered.medicinal) filtered.medicinal *= 1.3;
-        if (filtered.firefly) filtered.firefly *= 1.15;
+        if (filtered.firefly) filtered.firefly *= 1.18;
+        if (filtered.hourglass) filtered.hourglass *= 1.2;
         if (filtered.bomb) filtered.bomb *= 0.72;
         if (filtered.poison) filtered.poison *= 0.78;
         if (filtered.spiral) filtered.spiral *= 0.84;
@@ -1782,6 +2190,11 @@
         if (filtered.bomb) filtered.bomb *= 1.15;
         if (filtered.poison) filtered.poison *= 1.12;
         if (filtered.spiral) filtered.spiral *= 1.12;
+        if (state.level >= 11 && state.weather.darkness > 0.28) {
+          if (filtered.firefly) filtered.firefly *= state.effects.nightVision > 0 ? 1.05 : 1.75;
+          if (filtered.hourglass) filtered.hourglass *= 0.9;
+          if (filtered.normal) filtered.normal *= 0.8;
+        }
         if (filtered.normal) filtered.normal *= 0.86;
       }
 
@@ -1820,7 +2233,7 @@
       if (amount <= 0) return false;
       if (state.effects.medicinal > 0) {
         playSound('medicine');
-        addFloatText(frogX(), frogY() - 62, 'SHIELD BLOCK', '#d8ffe9');
+        addFloatText(frogX(), frogY() - 62, isHindi() ? 'ढाल बोली: बस!' : 'SHIELD BLOCK', '#d8ffe9');
         return false;
       }
 
@@ -1833,7 +2246,7 @@
 
       if (state.health.frog <= 0) {
         const endName = sourceName || 'RIVAL';
-        state.rival.result = `${endName} DEFEATED ASCII FROG`;
+        state.rival.result = isHindi() ? `${getHindiRivalEvent(endName, 'wins')} · ASCII Frog हार गया` : `${endName} DEFEATED ASCII FROG`;
         state.rival2.result = state.rival.result;
         state.mode = MODE.GAME_OVER;
       }
@@ -1986,57 +2399,120 @@
       return `[${'#'.repeat(filled)}${'-'.repeat(size - filled)}] ${Math.round(p * 100)}%`;
     }
 
-    function getLevelFocus(level) {
-      return LEVEL_FOCUS[level] || LEVEL_FOCUS[1];
-    }
-
     function getWorldShiftLabel() {
       const note = (state.aiDirector.lastNote || '').toUpperCase();
-      if (note.includes('CHAOS') || note.includes('SPIKE')) return 'storm rising';
-      if (note.includes('CALM') || note.includes('RECOVERY')) return 'calm pocket';
-      if (note.includes('RIVAL')) return 'rival pressure';
-      if (note.includes('FLOW')) return 'mixed current';
+      if (note.includes('CHAOS') || note.includes('SPIKE')) return isHindi() ? 'तूफ़ान बढ़ रहा है' : 'storm rising';
+      if (note.includes('CALM') || note.includes('RECOVERY')) return isHindi() ? 'शांत मौका' : 'calm pocket';
+      if (note.includes('RIVAL')) return isHindi() ? 'राइवल का दबाव' : 'rival pressure';
+      if (note.includes('FLOW')) return isHindi() ? 'मिश्रित धारा' : 'mixed current';
       return '';
     }
 
     function getWorldLine() {
       const focus = getLevelFocus(state.level);
       const shift = getWorldShiftLabel();
-      const worldParts = [state.currentEnv.name.toLowerCase(), state.weather.baseName.toLowerCase(), focus.world];
+      const envName = isHindi() ? getLocalizedEnvironmentName(state.currentEnv.name) : state.currentEnv.name.toLowerCase();
+      const weatherName = isHindi() ? getLocalizedWeatherName(state.weather.baseName) : state.weather.baseName.toLowerCase();
+      const worldParts = [envName, weatherName, focus.world];
       if (shift) worldParts.push(shift);
-      return `WORLD: ${worldParts.join(' · ')}`;
+      return isHindi() ? `दुनिया: ${worldParts.join(' · ')}` : `WORLD: ${worldParts.join(' · ')}`;
+    }
+
+    function buildQuestDisplay() {
+      if (!state.quest.active) return '';
+      return state.quest.words.map((word, index) => {
+        const done = index < state.quest.wordIndex
+          ? word
+          : (index > state.quest.wordIndex ? ''.padEnd(word.length, '_') : `${word.slice(0, state.quest.progress)}${'_'.repeat(Math.max(0, word.length - state.quest.progress))}`);
+        return `${word} [${done}]`;
+      }).join(' · ');
+    }
+
+    function getEnvironmentFooterNote() {
+      if (state.level === 12 && state.finalChallenge.active) {
+        return isHindi() ? `अंतिम तूफ़ान ${state.finalChallenge.timer.toFixed(1)}से` : `FINAL STORM ${state.finalChallenge.timer.toFixed(1)}S`;
+      }
+      if (state.quest.active && !state.quest.completed) {
+        if (state.level === 7) return isHindi() ? `अक्षर दौड़ ${state.quest.timer.toFixed(1)}से` : `LETTER RUSH ${state.quest.timer.toFixed(1)}S`;
+        const expected = state.quest.target[state.quest.progress] || state.quest.target[0] || '';
+        return expected
+          ? (isHindi() ? `अगला अक्षर ${expected}` : `NEXT LETTER ${expected}`)
+          : (isHindi() ? `${state.quest.label} अक्षर` : `${state.quest.label} LETTERS`);
+      }
+      if (state.effects.timeFreeze > 0) return isHindi() ? 'टिक-टिक थमी · समय थमा है' : 'TIME HOLDING';
+      if (state.effects.medicinal > 0) return isHindi() ? 'क्या बात है · X दबाओ, सीधी लाइन साफ़' : 'MED SHIELD · PRESS X FOR LINE';
+      if (state.effects.hopeHalo > 0) return isHindi() ? 'होप का हेलो · पूरा घेरा वार' : 'HALO ACTIVE · FULL SWEEP';
+      if (state.effects.hopeGiant > 0) return isHindi() ? 'वाह! विशाल मेंढक सक्रिय' : 'GIANT FROG ACTIVE';
+      if (state.effects.loveRain > 0) return isHindi() ? 'प्रेम बरसा रे · दिलों की बारिश' : 'HEART RAIN FALLING';
+      if (state.effects.loveJump > 0) return isHindi() ? 'LOVE शक्ति · अब लंबी छलांग' : 'LOVE BOOST · JUMP FARTHER';
+      if (state.weather.darkness > 0.52 && state.effects.nightVision <= 0) return isHindi() ? 'घुप्प अंधेरा · जुगनू पकड़ो' : 'BLACKOUT · FIND A FIREFLY';
+      if (state.directionalSight.timer > 0 && state.effects.nightVision > 0) {
+        return state.directionalSight.armed
+          ? (isHindi() ? `रोशनी ${getLocalizedDirection(state.directionalSight.dir)} · फिर दबाओ` : `TORCH ${state.directionalSight.dir} · PRESS AGAIN`)
+          : (isHindi() ? `रोशनी ${getLocalizedDirection(state.directionalSight.dir)}` : `TORCH ${state.directionalSight.dir}`);
+      }
+      if (state.weather.darkness > 0.52 && state.effects.nightVision > 0) return isHindi() ? 'धूम! अंधेरा है · तीर दबाओ, रोशनी खोलो' : 'BLACKOUT · TAP ARROW TO SCAN';
+      if (state.effects.nightVision > 0) return isHindi() ? `रात-दृष्टि ${state.effects.nightVision.toFixed(1)}से` : `NIGHT VISION ${state.effects.nightVision.toFixed(1)}S`;
+      if (activeRivals().length > 0) return isHindi() ? `${getLocalizedWeatherName(state.weather.baseName)} · अँधेरी लहरें` : `${state.weather.baseName.toUpperCase()} · DARK PULSES`;
+      if (state.weather.lightningTimer > 0) return isHindi() ? 'बिजली चमकी' : 'LIGHTNING FLASH';
+      if (state.weather.rain) return isHindi() ? 'बारिश से दलदल फिसलन भरा है' : 'RAIN SLICKS THE MARSH';
+      if (state.weather.snow) return isHindi() ? 'ठंडी हवा दलदल को धीमा करती है' : 'COLD AIR SLOWS THE SWAMP';
+      if (state.weather.highWind || Math.abs(state.weather.windX) > 36) {
+        return state.weather.windX >= 0
+          ? (isHindi() ? 'आड़ी हवा दाएँ धकेल रही है' : 'CROSSWIND PUSHES RIGHT')
+          : (isHindi() ? 'आड़ी हवा बाएँ धकेल रही है' : 'CROSSWIND PUSHES LEFT');
+      }
+      const shift = getWorldShiftLabel();
+      if (shift) return isHindi() ? shift : shift.toUpperCase();
+      return `${state.weather.baseName.toUpperCase()} · ${isHindi() ? getLevelFocus(state.level).world : getLevelFocus(state.level).world.toUpperCase()}`;
+    }
+
+    function getBottomFlashLine() {
+      if (state.mode === MODE.START) return isHindi() ? 'मिशन: गिरगिट से पहले लेडी फ्रॉग तक पहुँचो, मेंढक महाराज' : 'MISSION: REACH LADY FROG BEFORE CHAMELEON DOES';
+      if (state.mode === MODE.LEVEL_UP) return isHindi() ? 'स्तर पूरा' : 'LEVEL CLEAR';
+      if (state.mode === MODE.PAUSED) return isHindi() ? 'रुका हुआ' : 'PAUSED';
+      if (state.mode === MODE.GAME_OVER) return isHindi() ? 'दौड़ टूट गई' : 'RUN BROKEN';
+      if (state.mode === MODE.WIN) return '';
+      return getEnvironmentFooterNote();
     }
 
     function getObjectiveLine() {
-      if (state.mode === MODE.START) return 'OBJECTIVE: WATCH THE FIELD, THEN STRIKE WITH INTENT.';
-      if (state.level === 12 && state.finalChallenge.active) return 'OBJECTIVE: OUTLAST THE FINAL STORM AND KEEP YOUR LINE.';
+      if (state.mode === MODE.START) return isHindi() ? 'लक्ष्य: मैदान पढ़ो, फिर सही समय पर वार करो।' : 'OBJECTIVE: WATCH THE FIELD, THEN STRIKE WITH INTENT.';
+      if (state.level === 12 && state.finalChallenge.active) return isHindi() ? 'लक्ष्य: अंतिम तूफ़ान झेलो और अपनी राह बचाए रखो।' : 'OBJECTIVE: OUTLAST THE FINAL STORM AND KEEP YOUR LINE.';
       if (state.quest.active && !state.quest.completed) {
-        return `OBJECTIVE: COMPLETE ${state.quest.label} IN ORDER.`;
+        return isHindi() ? `लक्ष्य: ${state.quest.label} को क्रम से पूरा करो।` : `OBJECTIVE: COMPLETE ${state.quest.label} IN ORDER.`;
       }
       const rivals = activeRivals();
       if (rivals.length > 0) {
-        return `OBJECTIVE: STAY AHEAD OF ${rivals.map((rv) => rv.name.split(' ')[0]).join(' + ')} TO ${state.levelGoal}.`;
+        return isHindi()
+          ? `लक्ष्य: ${rivals.map((rv) => getRivalShortName(rv)).join(' + ')} से आगे रहो, ${state.levelGoal} तक।`
+          : `OBJECTIVE: STAY AHEAD OF ${rivals.map((rv) => rv.name.split(' ')[0]).join(' + ')} TO ${state.levelGoal}.`;
       }
-      return `OBJECTIVE: ${getLevelFocus(state.level).objective.toUpperCase()}`;
+      return isHindi() ? `लक्ष्य: ${getLevelFocus(state.level).objective}` : `OBJECTIVE: ${getLevelFocus(state.level).objective.toUpperCase()}`;
     }
 
     function getFocusLine() {
       const focus = getLevelFocus(state.level);
-      return `FOCUS: ${focus.title} · ${focus.cue.toUpperCase()}`;
+      return isHindi() ? `ध्यान: ${focus.title} · ${focus.cue}` : `FOCUS: ${focus.title} · ${focus.cue.toUpperCase()}`;
     }
 
     function getContextLine() {
       const rivals = activeRivals();
       if (rivals.length > 0) {
-        return `RIVAL: ${rivals.map((rv) => `${rv.name.split(' ')[0]} ${Math.round((rv.health / Math.max(1, rv.maxHealth)) * 100)}%`).join(' | ')}`;
+        return isHindi()
+          ? `राइवल: ${rivals.map((rv) => `${getRivalShortName(rv)} ${Math.round((rv.health / Math.max(1, rv.maxHealth)) * 100)}%`).join(' | ')}`
+          : `RIVAL: ${rivals.map((rv) => `${rv.name.split(' ')[0]} ${Math.round((rv.health / Math.max(1, rv.maxHealth)) * 100)}%`).join(' | ')}`;
       }
-      if (state.effects.timeFreeze > 0) return `STATE: TIME FREEZE ${state.effects.timeFreeze.toFixed(1)}s`;
-      if (state.effects.medicinal > 0) return `STATE: MED SHIELD+BOMB+REGEN ${state.effects.medicinal.toFixed(1)}s · X LINE`;
-      if (state.effects.glow > 0) return `STATE: GLOW ${state.effects.glow.toFixed(1)}s`;
-      if (state.effects.spiral > 0) return `STATE: SPIRAL ${state.effects.spiral.toFixed(1)}s`;
-      if (state.effects.drunk > 0) return `STATE: CONFUSED ${state.effects.drunk.toFixed(1)}s`;
-      if (state.level >= 3 && state.frog.jumpCooldown > 0) return `STATE: JUMP COOLING ${state.frog.jumpCooldown.toFixed(1)}s`;
-      return getWorldLine().toUpperCase();
+      if (state.effects.nightVision > 0) return isHindi() ? `स्थिति: रात-दृष्टि ${state.effects.nightVision.toFixed(1)}से · अब सब दिखेगा` : `STATE: NIGHT VISION ${state.effects.nightVision.toFixed(1)}s`;
+      if (state.effects.hopeHalo > 0) return isHindi() ? `स्थिति: हेलो झाड़ू ${state.effects.hopeHalo.toFixed(1)}से · वाह!` : `STATE: HALO SWEEP ${state.effects.hopeHalo.toFixed(1)}s`;
+      if (state.effects.loveJump > 0) return isHindi() ? `स्थिति: LOVE छलांग ${state.effects.loveJump.toFixed(1)}से · क्या बात है` : `STATE: LOVE LEAP ${state.effects.loveJump.toFixed(1)}s`;
+      if (state.effects.timeFreeze > 0) return isHindi() ? `स्थिति: समय रुका ${state.effects.timeFreeze.toFixed(1)}से · सब थम गया` : `STATE: TIME FREEZE ${state.effects.timeFreeze.toFixed(1)}s`;
+      if (state.effects.medicinal > 0) return isHindi() ? `स्थिति: औषधि ढाल ${state.effects.medicinal.toFixed(1)}से · X से लाइन साफ़` : `STATE: MED SHIELD+BOMB+REGEN ${state.effects.medicinal.toFixed(1)}s · X LINE`;
+      if (state.effects.glow > 0) return isHindi() ? `स्थिति: चमक ${state.effects.glow.toFixed(1)}से · झकास` : `STATE: GLOW ${state.effects.glow.toFixed(1)}s`;
+      if (state.effects.spiral > 0) return isHindi() ? `स्थिति: स्पाइरल ${state.effects.spiral.toFixed(1)}से · घूमो और चटो` : `STATE: SPIRAL ${state.effects.spiral.toFixed(1)}s`;
+      if (state.effects.drunk > 0) return isHindi() ? `स्थिति: निशाना डगमग ${state.effects.drunk.toFixed(1)}से · अरे बाप रे` : `STATE: CONFUSED ${state.effects.drunk.toFixed(1)}s`;
+      if (state.level >= 3 && state.frog.jumpCooldown > 0) return isHindi() ? `स्थिति: छलांग ठंडी ${state.frog.jumpCooldown.toFixed(1)}से · थोड़ा ठहरो` : `STATE: JUMP COOLING ${state.frog.jumpCooldown.toFixed(1)}s`;
+      return isHindi() ? getWorldLine() : getWorldLine().toUpperCase();
     }
 
     function weatherForLevel(level) {
@@ -2061,6 +2537,7 @@
       const w = weatherForLevel(state.level);
       state.weather.baseName = w.name;
       state.weather.baseWind = w.wind;
+      state.weather.baseDarkness = 0;
       state.weather.baseRain = w.rain;
       state.weather.baseSnow = w.snow;
       state.weather.baseHighWind = w.highWind;
@@ -2073,6 +2550,7 @@
       state.weather.lightningChance = w.lightning || 0;
       state.weather.lightningTimer = 0;
       state.weather.lightningX = state.width * 0.5;
+      state.weather.darkness = state.weather.baseDarkness;
       state.weather.particles = [];
       const count = w.rain ? 120 : (w.snow ? 95 : (w.highWind ? 70 : 26));
       for (let i = 0; i < count; i++) {
@@ -2088,14 +2566,19 @@
 
     function updateHud() {
       const focus = getLevelFocus(state.level);
-      scoreLine.textContent = `SCORE ${state.score}`;
-      levelLine.textContent = `LEVEL ${state.level} · ${focus.title}`;
-      frogHealthLine.textContent = `ASCII HP ${buildBar(state.health.frog / Math.max(1, state.health.maxFrog), 10)}`;
+      scoreLine.textContent = isHindi() ? `स्कोर ${state.score}` : `SCORE ${state.score}`;
+      levelLine.textContent = isHindi() ? `स्तर ${state.level} · ${focus.title}` : `LEVEL ${state.level} · ${focus.title}`;
+      frogHealthLine.textContent = isHindi()
+        ? `ASCII जीवन ${buildBar(state.health.frog / Math.max(1, state.health.maxFrog), 10)}`
+        : `ASCII HP ${buildBar(state.health.frog / Math.max(1, state.health.maxFrog), 10)}`;
 
       let progressPct = 0;
       if (state.level === 12 && state.finalChallenge.active) {
         progressPct = 1 - state.finalChallenge.timer / Math.max(1, state.finalChallenge.duration);
-        progressLine.textContent = `SURVIVAL ${buildBar(progressPct)}`;
+        progressLine.textContent = isHindi() ? `बचाव ${buildBar(progressPct)}` : `SURVIVAL ${buildBar(progressPct)}`;
+      } else if (state.level === 7 && state.quest.active) {
+        progressPct = 1 - state.quest.timer / Math.max(1, state.quest.duration);
+        progressLine.textContent = isHindi() ? `अक्षर समय ${buildBar(progressPct)}` : `LETTER TIMER ${buildBar(progressPct)}`;
       } else {
         const scorePct = state.levelGoal > 0 ? state.score / state.levelGoal : 1;
         if (state.quest.active) {
@@ -2104,45 +2587,26 @@
         } else {
           progressPct = scorePct;
         }
-        progressLine.textContent = `PROGRESS ${buildBar(progressPct)}`;
+        progressLine.textContent = isHindi() ? `प्रगति ${buildBar(progressPct)}` : `PROGRESS ${buildBar(progressPct)}`;
       }
-
-      if (state.mode === MODE.START) statusLine.textContent = 'WATCH THE FIELD';
-      if (state.mode === MODE.PLAYING) {
-        const rivals = activeRivals();
-        if (rivals.length > 0) {
-          const rivalText = rivals.map((rv) => `${rv.name.split(' ')[0]} ${rv.score}`).join(' | ');
-          statusLine.textContent = `DUEL: YOU ${state.score} | ${rivalText}`;
-        } else {
-          const worldShift = getWorldShiftLabel();
-          statusLine.textContent = worldShift ? worldShift.toUpperCase() : `${focus.title} WINDOW`;
-        }
-      }
-      if (state.mode === MODE.LEVEL_UP) statusLine.textContent = 'LEVEL CLEAR';
-      if (state.mode === MODE.PAUSED) statusLine.textContent = 'PAUSED';
-      if (state.mode === MODE.GAME_OVER) {
-        const rivals = activeRivals();
-        const firstResult = rivals.map((rv) => rv.result).find(Boolean);
-        statusLine.textContent = firstResult || 'GAME OVER';
-      }
-      if (state.mode === MODE.WIN) statusLine.textContent = 'ASCII VICTORY';
 
       const hideUi = state.mode === MODE.WIN;
       hud.style.display = hideUi ? 'none' : 'grid';
       help.style.display = hideUi ? 'none' : 'block';
-      objectiveLine.textContent = getObjectiveLine();
-      focusLine.textContent = getFocusLine().toUpperCase();
-      contextLine.textContent = getContextLine();
+      flashBar.classList.toggle('show', !hideUi);
+      flashLine.textContent = getBottomFlashLine();
       if (activeRivals().length) {
-        rivalHealthLine.textContent = `RIVAL: ${activeRivals().map((rv) => `${rv.name.split(' ')[0]} ${rv.score}/${rv.target}`).join(' | ')}`;
-      } else if (state.quest.active && !state.quest.completed) {
-        const done = state.quest.target.slice(0, state.quest.progress);
-        const rem = state.quest.target.slice(state.quest.progress);
-        rivalHealthLine.textContent = `SEQUENCE: ${done}${'_'.repeat(rem.length)}`;
+        questLine.textContent = isHindi()
+          ? `राइवल ${activeRivals().map((rv) => `${getRivalShortName(rv)} ${rv.score}/${rv.target}`).join(' | ')}`
+          : `RIVAL ${activeRivals().map((rv) => `${rv.name.split(' ')[0]} ${rv.score}/${rv.target}`).join(' | ')}`;
+      } else if (state.quest.active) {
+        questLine.textContent = state.level === 7
+          ? `${buildQuestDisplay()} · ${state.quest.timer.toFixed(1)}${isHindi() ? 'से' : 'S'}`
+          : buildQuestDisplay();
       } else if (state.level === 12 && state.finalChallenge.active) {
-        rivalHealthLine.textContent = `TIMER: ${state.finalChallenge.timer.toFixed(1)}s`;
+        questLine.textContent = isHindi() ? `समय ${state.finalChallenge.timer.toFixed(1)}से` : `TIMER ${state.finalChallenge.timer.toFixed(1)}S`;
       } else {
-        rivalHealthLine.textContent = `FLOW: ${buildBar(progressPct, 10)}`;
+        questLine.textContent = getContextLine();
       }
     }
 
@@ -2168,7 +2632,7 @@
       resetDirectorRuntime();
       state.aiDirector.tickS = 0.6 + Math.random() * 0.8;
       state.levelIntroTimer = 2.1;
-      state.levelIntroText = cfg.intro;
+      state.levelIntroText = getLevelIntro(level);
       state.flies = [];
       createBackground();
       setupWeather();
@@ -2180,17 +2644,32 @@
 
       if (state.level === 7) {
         state.quest.active = true;
-        state.quest.target = 'ASCIIFROG';
-        state.quest.label = 'ASCII FROG';
-        state.quest.reward = 450;
+        state.quest.words = ['LOVE', 'HOPE'];
+        state.quest.wordIndex = 0;
+        state.quest.target = state.quest.words[0];
+        state.quest.label = state.quest.target;
+        state.quest.reward = 550;
+        state.quest.spawnCycle = 0;
+        state.quest.duration = 28;
+        state.quest.timer = state.quest.duration;
+        state.quest.timedOut = false;
       } else {
         state.quest.active = false;
-        state.quest.target = 'ASCIIFROG';
-        state.quest.label = 'ASCII FROG';
-        state.quest.reward = 450;
+        state.quest.words = ['LOVE', 'HOPE'];
+        state.quest.wordIndex = 0;
+        state.quest.target = 'LOVE';
+        state.quest.label = 'LOVE';
+        state.quest.reward = 550;
+        state.quest.spawnCycle = 0;
+        state.quest.duration = 0;
+        state.quest.timer = 0;
+        state.quest.timedOut = false;
       }
       state.quest.completed = false;
       state.quest.progress = 0;
+      state.directionalSight.timer = 0;
+      state.directionalSight.dir = 'RIGHT';
+      state.directionalSight.armed = false;
 
       if (state.level === 12) {
         state.finalChallenge.active = true;
@@ -2229,6 +2708,14 @@
       state.effects.spiral = 0;
       state.effects.medicinal = 0;
       state.effects.timeFreeze = 0;
+      state.effects.nightVision = 0;
+      state.effects.loveJump = 0;
+      state.effects.loveRain = 0;
+      state.effects.hopeHalo = 0;
+      state.effects.hopeGiant = 0;
+      state.directionalSight.timer = 0;
+      state.directionalSight.dir = 'RIGHT';
+      state.directionalSight.armed = false;
       resetDirectorRuntime();
       state.aiDirector.tickS = 0.6;
       resetRival(state.rival);
@@ -2251,6 +2738,9 @@
       state.finalChallenge.timer = 0;
       state.finalChallenge.shotCooldown = 0;
       state.finalChallenge.bullets = [];
+      state.quest.timer = 0;
+      state.quest.duration = 0;
+      state.quest.timedOut = false;
       state.frog.ox = 0;
       state.frog.oy = 0;
       state.frog.vx = 0;
@@ -2326,6 +2816,10 @@
         spawnFly();
       }
 
+      if (state.level === 7 && state.quest.active && state.flies.length < state.spawnCap) {
+        spawnFly();
+      }
+
       if (state.level >= 9 && Math.random() < 0.14 && state.flies.length < state.spawnCap) {
         spawnFly();
       }
@@ -2378,6 +2872,17 @@
         playSound('lightning');
       }
 
+      const rivalDark = state.level >= 11 && activeRivals().length > 0
+        ? (() => {
+            const waveA = Math.sin(state.frame * 0.012 + state.level * 0.4) * 0.5 + 0.5;
+            const waveB = Math.cos(state.frame * 0.019 + 1.7) * 0.5 + 0.5;
+            const pulse = Math.max(0, waveA * 0.92 + waveB * 0.78 - 1.08);
+            return Math.pow(clamp(pulse / 0.45, 0, 1), 1.15) * clamp(0.84 * rt.weatherDarknessScale, 0.14, 0.9);
+          })()
+        : 0;
+      state.weather.darkness = clamp(state.weather.baseDarkness + rivalDark, 0, 0.72);
+      if (state.weather.darkness > 0.46) state.weather.name = `${state.weather.baseName} · DARK`;
+
       if (state.effects.timeFreeze > 0) return;
 
       for (const p of state.weather.particles) {
@@ -2409,12 +2914,20 @@
       if (state.level < 3) return;
       if (state.frog.jumpCooldown > 0) return;
       const v = getVector(dir);
-      state.frog.vx += v.dx * 320;
-      state.frog.vy += v.dy * 210;
-      state.frog.jumpVZ = 560;
+      const jumpBoost = state.effects.loveJump > 0 ? 1.3 : 1;
+      state.frog.vx += v.dx * 320 * jumpBoost;
+      state.frog.vy += v.dy * 210 * jumpBoost;
+      state.frog.jumpVZ = 560 * (state.effects.loveJump > 0 ? 1.18 : 1);
       state.frog.landSquash = 0;
-      state.frog.jumpCooldown = 0.72;
-      addFloatText(frogX(), frogY() - 72, `JUMP ${dir}`, '#c8ffd8');
+      state.frog.jumpCooldown = state.effects.loveJump > 0 ? 0.48 : 0.72;
+      addFloatText(
+        frogX(),
+        frogY() - 72,
+        state.effects.loveJump > 0
+          ? (isHindi() ? `LOVE छलांग ${getLocalizedDirection(dir)}` : `LOVE LEAP ${dir}`)
+          : (isHindi() ? `छलांग ${getLocalizedDirection(dir)}` : `JUMP ${dir}`),
+        '#c8ffd8'
+      );
       playSound('shoot');
       updateHud();
     }
@@ -2423,7 +2936,7 @@
       let shotDir = dir;
       if (state.effects.drunk > 0) {
         shotDir = rotateDir90(dir, Math.random() < 0.5 ? 1 : -1);
-        addFloatText(frogX(), frogY() - 54, `WOBBLE ${dir}->${shotDir}`, '#ffc6ff');
+        addFloatText(frogX(), frogY() - 54, isHindi() ? `डगमग ${getLocalizedDirection(dir)}→${getLocalizedDirection(shotDir)}` : `WOBBLE ${dir}->${shotDir}`, '#ffc6ff');
       }
       return shotDir;
     }
@@ -2457,7 +2970,7 @@
         if (isReversePressed(shotDir)) {
           state.tongue.outSpeed = 130;
           state.tongue.maxLength = Math.max(68, state.tongue.baseMaxLength * 0.16);
-          addFloatText(frogX(), frogY() - 54, 'MED BRAKE', '#d8ffe9');
+          addFloatText(frogX(), frogY() - 54, isHindi() ? 'औषधि ब्रेक' : 'MED BRAKE', '#d8ffe9');
         }
       }
       playSound('shoot');
@@ -2503,7 +3016,7 @@
       state.shakeTimer = 0.62;
       state.shakePower = 15;
       spawnBurst(fly.x, fly.y, '#ff6767', 40, 0.8);
-      addFloatText(fly.x, fly.y - 30, `-${penalty} BOMB`, '#ff9a9a');
+      addFloatText(fly.x, fly.y - 30, isHindi() ? `-${penalty} बम` : `-${penalty} BOMB`, '#ff9a9a');
       saveHighScore();
       updateHud();
     }
@@ -2516,7 +3029,7 @@
       state.sweep.range = range;
       state.sweep.protectBombs = !!options.protectBombs;
       playSound('sweep');
-      addFloatText(frogX(), frogY() - 92, options.label || '360 SWEEP', '#d9ffb5');
+      addFloatText(frogX(), frogY() - 92, options.label || (isHindi() ? '360 झाड़ू वार' : '360 SWEEP'), '#d9ffb5');
       updateHud();
     }
 
@@ -2558,20 +3071,41 @@
       if (fly.letter === expected) {
         state.quest.progress += 1;
         state.score += 100;
-        addFloatText(fly.x, fly.y - 24, `+100 ${fly.letter}`, '#ddf3ff');
+        addFloatText(fly.x, fly.y - 24, isHindi() ? `+100 अक्षर ${fly.letter}` : `+100 ${fly.letter}`, '#ddf3ff');
         playCatchCelebrate(fly);
         if (state.quest.progress >= state.quest.target.length) {
-          state.quest.completed = true;
+          const clearedWord = state.quest.target;
           state.score += state.quest.reward;
-          addFloatText(state.cx, state.cy - 115, `QUEST COMPLETE +${state.quest.reward}`, '#b8f8ff');
           spawnBurst(state.cx, state.cy, '#b8f8ff', 45, 0.9);
           playSound('level');
+          if (clearedWord === 'LOVE') {
+            state.effects.loveJump = Math.max(state.effects.loveJump, 14);
+            state.effects.loveRain = Math.max(state.effects.loveRain, 6.5);
+            spawnQuestHeartRain(44);
+            addFloatText(state.cx, state.cy - 115, isHindi() ? `LOVE पूरा +${state.quest.reward}` : `LOVE COMPLETE +${state.quest.reward}`, '#ffb7df');
+            addFloatText(frogX(), frogY() - 92, isHindi() ? 'दिल छलांग तैयार' : 'HEART LEAP READY', '#ffd4ef');
+            state.quest.wordIndex = 1;
+            state.quest.target = state.quest.words[1];
+            state.quest.label = state.quest.target;
+            state.quest.reward = 700;
+            state.quest.spawnCycle = 0;
+            state.quest.progress = 0;
+          } else {
+            state.quest.completed = true;
+            state.effects.hopeHalo = Math.max(state.effects.hopeHalo, 10.5);
+            state.effects.hopeGiant = Math.max(state.effects.hopeGiant, 10.5);
+            state.health.frog = Math.min(state.health.maxFrog, state.health.frog + 34);
+            state.lives = Math.max(0, Math.ceil(state.health.frog / 20));
+            triggerSweep(360, { duration: 7.8, protectBombs: true, label: isHindi() ? 'हेलो झाड़ू' : 'HALO SWEEP' });
+            addFloatText(state.cx, state.cy - 115, isHindi() ? `HOPE पूरा +${state.quest.reward}` : `HOPE COMPLETE +${state.quest.reward}`, '#b8f8ff');
+            addFloatText(frogX(), frogY() - 92, isHindi() ? 'विशाल HOPE रूप' : 'GIANT HOPE FORM', '#fff3b2');
+          }
         }
       } else {
         state.quest.progress = Math.max(0, state.quest.progress - 1);
         state.combo = 1;
         state.comboChain = 0;
-        addFloatText(fly.x, fly.y - 24, `WRONG ${fly.letter}`, '#ffb6d6');
+        addFloatText(fly.x, fly.y - 24, isHindi() ? `गलत ${fly.letter}` : `WRONG ${fly.letter}`, '#ffb6d6');
       }
       saveHighScore();
       updateHud();
@@ -2587,7 +3121,7 @@
         if (protectBombs) {
           playSound('medicine');
           state.score += 12;
-          addFloatText(x, y - 24, 'BOMB SHIELDED', '#b8ffd9');
+          addFloatText(x, y - 24, isHindi() ? 'बम ढाल ने रोका' : 'BOMB SHIELDED', '#b8ffd9');
           saveHighScore();
           updateHud();
           return;
@@ -2605,10 +3139,22 @@
         playCatchCelebrate(fly);
         const boost = 35 * state.combo;
         state.score += boost;
-        state.effects.glow = Math.max(state.effects.glow, 5.5);
-        state.effects.timeFreeze = Math.max(state.effects.timeFreeze, 4.6);
-        addFloatText(x, y - 20, `FIREFLY +${boost}`, '#fff9a8');
-        addFloatText(frogX(), frogY() - 92, 'TIME FREEZE!', '#c9f7ff');
+        addFloatText(x, y - 20, isHindi() ? `जुगनू +${boost}` : `FIREFLY +${boost}`, '#fff9a8');
+        if (state.level >= 11 && activeRivals().length > 0 && state.weather.darkness > 0.4) {
+          state.effects.glow = Math.max(state.effects.glow, 4.2);
+          state.effects.nightVision = Math.max(state.effects.nightVision, 7.5);
+          addFloatText(frogX(), frogY() - 92, isHindi() ? 'रात-दृष्टि तैयार' : 'NIGHT VISION READY', '#fff3a6');
+        }
+        saveHighScore();
+        updateHud();
+        return;
+      }
+
+      if (fly.id === 'hourglass') {
+        playCatchCelebrate(fly);
+        state.score += fly.points * state.combo;
+        state.effects.timeFreeze = Math.max(state.effects.timeFreeze, 4.8);
+        addFloatText(x, y - 20, isHindi() ? 'समय थम गया!' : 'TIME STOPS!', '#ccefff');
         playSound('freeze');
         saveHighScore();
         updateHud();
@@ -2620,7 +3166,7 @@
         state.effects.drunk = Math.max(state.effects.drunk, 8.5);
         state.effects.glow = Math.max(state.effects.glow, 3.5);
         state.score += fly.points * state.combo;
-        addFloatText(x, y - 20, 'POISON: LOOPY TONGUE', '#e8b8ff');
+        addFloatText(x, y - 20, isHindi() ? 'ज़हर: जीभ भटकी' : 'POISON: LOOPY TONGUE', '#e8b8ff');
         saveHighScore();
         updateHud();
         return;
@@ -2630,7 +3176,7 @@
         playCatchCelebrate(fly);
         state.effects.spiral = Math.max(state.effects.spiral, 8.5);
         state.score += fly.points * state.combo;
-        addFloatText(x, y - 20, 'SPIRAL DRILL ACTIVE', '#b8e7ff');
+        addFloatText(x, y - 20, isHindi() ? 'स्पाइरल ड्रिल चालू' : 'SPIRAL DRILL ACTIVE', '#b8e7ff');
         saveHighScore();
         updateHud();
         return;
@@ -2642,7 +3188,7 @@
         state.health.frog = Math.min(state.health.maxFrog, state.health.frog + 24);
         state.lives = Math.max(0, Math.ceil(state.health.frog / 20));
         state.score += fly.points * state.combo;
-        addFloatText(x, y - 20, 'MEDICINE: SHIELD + BOMB + REGEN', '#ffe68a');
+        addFloatText(x, y - 20, isHindi() ? 'औषधि: ढाल + बम बचाव + भरपाई' : 'MEDICINE: SHIELD + BOMB + REGEN', '#ffe68a');
         saveHighScore();
         updateHud();
         return;
@@ -2651,7 +3197,7 @@
       playCatchCelebrate(fly);
       const gained = fly.points * state.combo;
       state.score += gained;
-      addFloatText(x, y - 16, `+${gained}`, '#f0ffd8');
+      addFloatText(x, y - 16, isHindi() ? getHindiCatchText(fly, gained) : `+${gained}`, '#f0ffd8');
       saveHighScore();
       updateHud();
     }
@@ -2659,6 +3205,9 @@
     function levelReadyToAdvance() {
       if (state.level === 12 && state.finalChallenge.active) {
         return state.finalChallenge.timer <= 0 && state.mode === MODE.PLAYING;
+      }
+      if (state.level === 7 && state.quest.active) {
+        return state.quest.completed || state.quest.timer <= 0;
       }
       if (state.score < state.levelGoal) return false;
       if (state.quest.active && !state.quest.completed) return false;
@@ -2694,7 +3243,22 @@
       state.ending.rightTongue.aimLen = 38;
     }
 
+    function spawnQuestHeartRain(amount = 36) {
+      for (let i = 0; i < amount; i++) {
+        const px = Math.random() * state.width;
+        const py = -Math.random() * state.height * 0.45;
+        const p = new Particle(px, py, Math.random() < 0.5 ? '#ff8fc8' : '#ffd2ea', '<3', 1.4 + Math.random() * 0.9);
+        p.vx = (Math.random() - 0.5) * 22;
+        p.vy = 72 + Math.random() * 72;
+        state.particles.push(p);
+      }
+    }
+
     function triggerLevelAdvance() {
+      if (state.level === 7 && state.quest.active && state.quest.timer <= 0 && !state.quest.completed) {
+        state.quest.timedOut = true;
+        addFloatText(state.cx, state.cy - 110, isHindi() ? 'क्वेस्ट समय बंद' : 'QUEST WINDOW CLOSED', '#d6e8ff');
+      }
       if (activeRivals().length > 0) {
         for (const rv of activeRivals()) {
           rv.result = `YOU BEAT ${rv.name}`;
@@ -2732,15 +3296,15 @@
         state.quest.completed = true;
         state.quest.progress = state.quest.target.length;
       }
-      addFloatText(state.cx, state.cy - 120, 'CHEAT: NEXT LEVEL', '#afffe0');
+      addFloatText(state.cx, state.cy - 120, isHindi() ? 'चीट: अगला स्तर' : 'CHEAT: NEXT LEVEL', '#afffe0');
       triggerLevelAdvance();
     }
 
     function cheatSweep() {
       if (state.mode === MODE.START) startGameFromMenu();
       if (state.mode !== MODE.PLAYING) return;
-      addFloatText(state.cx, state.cy - 120, 'CHEAT: 360 SWEEP', '#a8dcff');
-      triggerSweep(430, { protectBombs: true, duration: 1.0, speed: Math.PI * 9.2, label: 'CHEAT SWEEP' });
+      addFloatText(state.cx, state.cy - 120, isHindi() ? 'चीट: 360 झाड़ू' : 'CHEAT: 360 SWEEP', '#a8dcff');
+      triggerSweep(430, { protectBombs: true, duration: 1.0, speed: Math.PI * 9.2, label: isHindi() ? 'चीट झाड़ू' : 'CHEAT SWEEP' });
     }
 
     function updateFrogMotion(dt) {
@@ -2785,7 +3349,7 @@
           const next = (rv.cornerIndex + 1 + Math.floor(Math.random() * 3)) % 4;
           snapRivalToCorner(rv, next);
           rv.cornerTimer = (1.8 + Math.random() * 2.2) / aiCornerHop;
-          addFloatText(rv.x, rv.y - 28, 'CHAMELEON SHIFT', '#b9ffe1');
+          addFloatText(rv.x, rv.y - 28, isHindi() ? 'गिरगिट बदल गया' : 'CHAMELEON SHIFT', '#b9ffe1');
         }
 
         if (rv.eatCooldown <= 0 && !rv.chTongue.active) {
@@ -2807,15 +3371,15 @@
           state.frog.vy += Math.sin(a) * push;
           if (shielded) {
             playSound('medicine');
-            addFloatText(frogX(), frogY() - 70, 'SHIELD BODY BLOCK', '#d8ffe9');
+            addFloatText(frogX(), frogY() - 70, isHindi() ? 'ढाल ने वार रोका' : 'SHIELD BODY BLOCK', '#d8ffe9');
           } else {
-            applyFrogDamage(8, 'CHAMELEON HIT!', '#ffc4b2', 'CHAMELEON');
+            applyFrogDamage(8, isHindi() ? getHindiRivalEvent('CHAMELEON', 'hit') : 'CHAMELEON HIT!', '#ffc4b2', 'CHAMELEON');
             playSound('bumpChameleon');
           }
         }
 
         if (rv.score >= rv.target && rv.score > state.score + 20) {
-          rv.result = `${rv.name} WINS`;
+          rv.result = isHindi() ? getHindiRivalEvent(rv.name, 'wins') : `${rv.name} WINS`;
           state.mode = MODE.GAME_OVER;
         }
         return;
@@ -2864,7 +3428,12 @@
           rv.score += gain;
           rv.eatCooldown = rv.type === 'chameleon' ? 0.1 : 0.16;
           spawnBurst(rv.x, rv.y, rv.type === 'chameleon' ? '#9fffd5' : '#78b7ff', 8, 0.38);
-          addFloatText(rv.x, rv.y - 26, `${rv.name} +${gain}`, rv.type === 'chameleon' ? '#9fffd5' : '#9fd0ff');
+          addFloatText(
+            rv.x,
+            rv.y - 26,
+            isHindi() ? `${getHindiRivalEvent(rv.name, 'score')}${gain}` : `${rv.name} +${gain}`,
+            rv.type === 'chameleon' ? '#9fffd5' : '#9fd0ff'
+          );
         }
       }
 
@@ -2883,16 +3452,16 @@
         rv.disturbCooldown = rv.type === 'chameleon' ? 0.52 : 0.78;
         if (shielded) {
           playSound('medicine');
-          addFloatText(frogX(), frogY() - 78, 'SHIELD BUMP BLOCK', '#d8ffe9');
+          addFloatText(frogX(), frogY() - 78, isHindi() ? 'ढाल ने धक्का रोका' : 'SHIELD BUMP BLOCK', '#d8ffe9');
         } else {
           playSound(rv.type === 'chameleon' ? 'bumpChameleon' : 'bumpBlue');
-          addFloatText(frogX(), frogY() - 82, `${rv.name} BUMP!`, '#ffcfb6');
-          applyFrogDamage(6, `${rv.name} BUMP!`, '#ffcfb6', rv.name);
+          addFloatText(frogX(), frogY() - 82, isHindi() ? getHindiRivalEvent(rv.name, 'bump') : `${rv.name} BUMP!`, '#ffcfb6');
+          applyFrogDamage(6, isHindi() ? getHindiRivalEvent(rv.name, 'bump') : `${rv.name} BUMP!`, '#ffcfb6', rv.name);
         }
       }
 
       if (rv.score >= rv.target && rv.score > state.score + 20) {
-        rv.result = `${rv.name} WINS`;
+        rv.result = isHindi() ? getHindiRivalEvent(rv.name, 'wins') : `${rv.name} WINS`;
         state.mode = MODE.GAME_OVER;
       }
     }
@@ -3070,7 +3639,7 @@
       if (state.tongue.state !== 'IDLE') return;
       const best = getBestRowOpportunity();
       if (!best || best.chain.length < 2) {
-        addFloatText(frogX(), frogY() - 72, 'NO CLEAR LINE', '#dbeaff');
+        addFloatText(frogX(), frogY() - 72, isHindi() ? 'सीधी लाइन नहीं' : 'NO CLEAR LINE', '#dbeaff');
         return;
       }
       const anchor = best.chain.reduce((closest, fly) => {
@@ -3098,7 +3667,12 @@
         drunkShot: false
       });
       playSound('medicine');
-      addFloatText((anchor.x + target.x) * 0.5, (anchor.y + target.y) * 0.5 - 22, `MED LINE x${best.chain.length}`, '#dfffd0');
+      addFloatText(
+        (anchor.x + target.x) * 0.5,
+        (anchor.y + target.y) * 0.5 - 22,
+        isHindi() ? `धूम लाइन x${best.chain.length}` : `MED LINE x${best.chain.length}`,
+        '#dfffd0'
+      );
       startBitMusic();
       updateHud();
     }
@@ -3109,14 +3683,14 @@
       rv.hitCooldown = 0.42;
       playSound(rv.type === 'chameleon' ? 'bumpChameleon' : 'bumpBlue');
       spawnBurst(rv.x, rv.y, rv.type === 'chameleon' ? '#b9ffe8' : '#9ac8ff', 7, 0.32);
-      addFloatText(rv.x, rv.y - 24, `-${damage} HP`, '#ffd8b6');
+      addFloatText(rv.x, rv.y - 24, isHindi() ? `-${damage} जान` : `-${damage} HP`, '#ffd8b6');
 
       if (rv.health <= 0) {
         rv.active = false;
         rv.vx = 0;
         rv.vy = 0;
         rv.result = `${rv.name} DOWN`;
-        addFloatText(rv.x, rv.y - 48, `${rv.name} DEFEATED`, '#ffe8ae');
+        addFloatText(rv.x, rv.y - 48, isHindi() ? getHindiRivalEvent(rv.name, 'defeated') : `${rv.name} DEFEATED`, '#ffe8ae');
       }
     }
 
@@ -3188,7 +3762,7 @@
             const rowLabel = caughtOrdered[0].id === 'letter'
               ? `LETTER ${caughtOrdered[0].letter}`
               : caughtOrdered[0].def.name.toUpperCase();
-            addFloatText(tip.x, tip.y - 26, `${rowLabel} ROW x${caughtOrdered.length}`, '#dfffd0');
+            addFloatText(tip.x, tip.y - 26, isHindi() ? `${rowLabel} लाइन x${caughtOrdered.length} · धूम!` : `${rowLabel} ROW x${caughtOrdered.length}`, '#dfffd0');
           }
         }
 
@@ -3254,6 +3828,25 @@
       if (state.effects.glow > 0) state.effects.glow -= dt;
       if (state.effects.drunk > 0) state.effects.drunk -= dt;
       if (state.effects.spiral > 0) state.effects.spiral -= dt;
+      if (state.effects.nightVision > 0) state.effects.nightVision = Math.max(0, state.effects.nightVision - dt);
+      if (state.effects.loveJump > 0) state.effects.loveJump = Math.max(0, state.effects.loveJump - dt);
+      if (state.effects.loveRain > 0) {
+        state.effects.loveRain = Math.max(0, state.effects.loveRain - dt);
+        if (Math.random() < 14 * dt) {
+          const p = new Particle(40 + Math.random() * (state.width - 80), -20 - Math.random() * 80, Math.random() < 0.5 ? '#ff93ca' : '#ffd8ec', '<3', 1.1 + Math.random() * 0.8);
+          p.vx = (Math.random() - 0.5) * 16;
+          p.vy = 82 + Math.random() * 58;
+          state.particles.push(p);
+        }
+      }
+      if (state.effects.hopeHalo > 0) {
+        state.effects.hopeHalo = Math.max(0, state.effects.hopeHalo - dt);
+        if (state.health.frog < state.health.maxFrog) {
+          state.health.frog = Math.min(state.health.maxFrog, state.health.frog + 8 * dt);
+          state.lives = Math.max(0, Math.ceil(state.health.frog / 20));
+        }
+      }
+      if (state.effects.hopeGiant > 0) state.effects.hopeGiant = Math.max(0, state.effects.hopeGiant - dt);
       if (state.medAim.timer > 0) {
         state.medAim.timer = Math.max(0, state.medAim.timer - dt);
         if (state.medAim.timer <= 0) state.medAim.active = false;
@@ -3262,6 +3855,13 @@
         state.effects.timeFreeze -= dt;
         if (state.effects.timeFreeze < 0) state.effects.timeFreeze = 0;
       }
+      if (state.directionalSight.timer > 0) {
+        state.directionalSight.timer = Math.max(0, state.directionalSight.timer - dt);
+        if (state.directionalSight.timer <= 0) {
+          state.directionalSight.armed = false;
+        }
+      }
+      if (state.effects.nightVision <= 0) state.directionalSight.armed = false;
       if (state.effects.medicinal > 0) {
         state.effects.medicinal -= dt;
         if (state.health.frog < state.health.maxFrog) {
@@ -3284,6 +3884,10 @@
       if (state.levelIntroTimer > 0) {
         state.levelIntroTimer -= dt;
         if (state.levelIntroTimer <= 0) state.levelIntroTimer = 0;
+      }
+
+      if (state.level === 7 && state.quest.active && state.mode === MODE.PLAYING) {
+        state.quest.timer = Math.max(0, state.quest.timer - dt);
       }
     }
 
@@ -3516,6 +4120,51 @@
           y += jy;
           ctx.fillText('|', lx + jx, y);
           if (Math.random() < 0.45) ctx.fillText('/', lx + jx - 8, y + 7);
+        }
+      }
+
+      if (state.weather.darkness > 0.01) {
+        ctx.fillStyle = `rgba(1, 2, 6, ${clamp(state.weather.darkness * 1.18, 0, 0.82)})`;
+        ctx.fillRect(0, 0, state.width, state.height);
+        if (state.directionalSight.timer > 0 && state.effects.nightVision > 0) {
+          const originX = frogX();
+          const originY = frogY() - 10;
+          const dir = getDirectionUnit(state.directionalSight.dir || state.frog.facing || 'RIGHT');
+          const angle = Math.atan2(dir.y, dir.x);
+          const spread = 0.38;
+          const range = 340;
+          const reveal = clamp(state.directionalSight.timer / 0.86, 0, 1);
+          ctx.save();
+          ctx.globalCompositeOperation = 'destination-out';
+          const cone = ctx.createRadialGradient(originX, originY, 12, originX + dir.x * range * 0.62, originY + dir.y * range * 0.62, range);
+          cone.addColorStop(0, `rgba(0,0,0,${0.62 * reveal})`);
+          cone.addColorStop(0.72, `rgba(0,0,0,${0.22 * reveal})`);
+          cone.addColorStop(1, 'rgba(0,0,0,0)');
+          ctx.fillStyle = cone;
+          ctx.beginPath();
+          ctx.moveTo(originX, originY);
+          ctx.arc(originX, originY, range, angle - spread, angle + spread);
+          ctx.closePath();
+          ctx.fill();
+          ctx.beginPath();
+          ctx.arc(originX, originY, 62, 0, Math.PI * 2);
+          ctx.fillStyle = `rgba(0,0,0,${0.16 * reveal})`;
+          ctx.fill();
+          ctx.restore();
+          ctx.save();
+          ctx.globalCompositeOperation = 'screen';
+          const torch = ctx.createRadialGradient(originX, originY, 12, originX + dir.x * range * 0.5, originY + dir.y * range * 0.5, range);
+          torch.addColorStop(0, `rgba(255, 242, 156, ${0.22 * reveal})`);
+          torch.addColorStop(0.38, `rgba(255, 232, 112, ${0.17 * reveal})`);
+          torch.addColorStop(0.82, `rgba(255, 215, 90, ${0.08 * reveal})`);
+          torch.addColorStop(1, 'rgba(255, 210, 80, 0)');
+          ctx.fillStyle = torch;
+          ctx.beginPath();
+          ctx.moveTo(originX, originY);
+          ctx.arc(originX, originY, range, angle - spread, angle + spread);
+          ctx.closePath();
+          ctx.fill();
+          ctx.restore();
         }
       }
     }
@@ -3879,11 +4528,196 @@
         ctx.globalAlpha = alpha * (flash ? 1 : (0.82 + 0.18 * Math.sin(state.frame * 0.28 + i * 0.6)));
         ctx.fillText(everAfterArt[i], state.cx, layout.titleY + i * 18);
       }
+      if (isHindi()) {
+        ctx.globalAlpha = alpha;
+        ctx.fillStyle = mixHexColors('#fff0a2', '#d6e5ff', starryBlend);
+        ctx.shadowColor = ctx.fillStyle;
+        ctx.shadowBlur = 12;
+        ctx.font = uiFont(18, 700);
+        ctx.fillText('सुखद मिलन', state.cx, layout.titleY + everAfterArt.length * 18 + 12);
+      }
+      ctx.restore();
+    }
+
+    function drawPixelGlyphRows(rows, startX, startY, pixelSize, gap, color, shadowColor, alpha = 1) {
+      ctx.save();
+      ctx.globalAlpha = alpha;
+      ctx.fillStyle = color;
+      ctx.shadowColor = shadowColor || color;
+      ctx.shadowBlur = Math.max(0, pixelSize * 0.8);
+      for (let y = 0; y < rows.length; y++) {
+        const row = rows[y];
+        for (let x = 0; x < row.length; x++) {
+          if (row[x] !== '1') continue;
+          ctx.fillRect(startX + x * (pixelSize + gap), startY + y * (pixelSize + gap), pixelSize, pixelSize);
+        }
+      }
+      ctx.restore();
+    }
+
+    function drawPixelCelebrationTitle(text, centerX, topY, alpha = 1) {
+      const font = {
+        A: ['01110','10001','10001','11111','10001','10001','10001'],
+        C: ['01111','10000','10000','10000','10000','10000','01111'],
+        G: ['01111','10000','10000','10111','10001','10001','01110'],
+        I: ['11111','00100','00100','00100','00100','00100','11111'],
+        L: ['10000','10000','10000','10000','10000','10000','11111'],
+        N: ['10001','11001','10101','10011','10001','10001','10001'],
+        O: ['01110','10001','10001','10001','10001','10001','01110'],
+        R: ['11110','10001','10001','11110','10100','10010','10001'],
+        S: ['01111','10000','10000','01110','00001','00001','11110'],
+        T: ['11111','00100','00100','00100','00100','00100','00100'],
+        U: ['10001','10001','10001','10001','10001','10001','01110'],
+        '!': ['00100','00100','00100','00100','00100','00000','00100']
+      };
+      const letters = text.split('');
+      const glyphWidth = 5;
+      const glyphHeight = 7;
+      const pixelSize = Math.max(6, Math.min(11, Math.floor(state.width / 120)));
+      const gap = 1;
+      const letterGap = pixelSize + 3;
+      const spaceGap = pixelSize * 3;
+      let totalWidth = 0;
+      for (const ch of letters) {
+        totalWidth += ch === ' ' ? spaceGap : (glyphWidth * (pixelSize + gap) - gap + letterGap);
+      }
+      totalWidth = Math.max(0, totalWidth - letterGap);
+      let x = centerX - totalWidth / 2;
+      for (const ch of letters) {
+        if (ch === ' ') {
+          x += spaceGap;
+          continue;
+        }
+        const rows = font[ch] || font.A;
+        drawPixelGlyphRows(rows, x, topY, pixelSize, gap, '#fff2a0', '#ffcf66', alpha);
+        const inset = Math.max(1, Math.floor(pixelSize * 0.18));
+        const inner = Math.max(2, Math.floor(pixelSize * 0.46));
+        drawPixelGlyphRows(rows, x + inset, topY + inset, inner, gap, '#fff9de', '#fff2a0', alpha * 0.95);
+        x += glyphWidth * (pixelSize + gap) - gap + letterGap;
+      }
+      return glyphHeight * (pixelSize + gap) - gap;
+    }
+
+    function drawCelebrationFireworks(alpha = 1) {
+      const bursts = [
+        { x: 0.18, y: 0.19, hue: '#ffcf6a', speed: 1.05, size: 1.0 },
+        { x: 0.34, y: 0.11, hue: '#9aeaff', speed: 1.28, size: 0.9 },
+        { x: 0.56, y: 0.18, hue: '#ff9fe2', speed: 1.16, size: 1.15 },
+        { x: 0.76, y: 0.14, hue: '#fff1a0', speed: 1.34, size: 1.05 },
+        { x: 0.86, y: 0.24, hue: '#95dfff', speed: 1.08, size: 0.92 }
+      ];
+      ctx.save();
+      ctx.globalAlpha = alpha;
+      for (let i = 0; i < bursts.length; i++) {
+        const burst = bursts[i];
+        const cycle = (state.ending.timer * burst.speed + i * 0.31) % 1.55;
+        const phase = cycle / 1.55;
+        const cx = state.width * burst.x;
+        const cy = state.height * burst.y;
+        const radius = (28 + phase * 78) * burst.size;
+        const spokes = 12 + (i % 3) * 2;
+        for (let s = 0; s < spokes; s++) {
+          const angle = (Math.PI * 2 * s) / spokes + phase * 0.26;
+          const px = cx + Math.cos(angle) * radius;
+          const py = cy + Math.sin(angle) * radius * 0.82;
+          const sparkSize = 3 + ((s + i) % 2);
+          ctx.fillStyle = burst.hue;
+          ctx.shadowColor = burst.hue;
+          ctx.shadowBlur = 12;
+          ctx.fillRect(px - sparkSize / 2, py - sparkSize / 2, sparkSize, sparkSize);
+          if (phase < 0.72) {
+            const mid = radius * 0.56;
+            const mx = cx + Math.cos(angle) * mid;
+            const my = cy + Math.sin(angle) * mid * 0.82;
+            ctx.globalAlpha = alpha * (0.18 + (1 - phase) * 0.36);
+            ctx.fillRect(mx - 1, my - 1, 2, 2);
+            ctx.globalAlpha = alpha;
+          }
+        }
+        ctx.fillStyle = '#fff9dd';
+        ctx.shadowColor = '#fff5c0';
+        ctx.shadowBlur = 18;
+        ctx.fillRect(cx - 3, cy - 3, 6, 6);
+      }
+      ctx.restore();
+    }
+
+    function drawLanguageToggle() {
+      if (state.mode !== MODE.START) return;
+      const rect = getLanguageToggleRect();
+      const enActive = !isHindi();
+      const hiActive = isHindi();
+      ctx.save();
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillStyle = 'rgba(7, 16, 10, 0.84)';
+      ctx.strokeStyle = 'rgba(170, 255, 170, 0.4)';
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.roundRect(rect.x, rect.y, rect.w, rect.h, 18);
+      ctx.fill();
+      ctx.stroke();
+
+      const half = rect.w / 2;
+      ctx.fillStyle = enActive ? 'rgba(120, 255, 150, 0.22)' : 'rgba(255, 255, 255, 0.04)';
+      ctx.beginPath();
+      ctx.roundRect(rect.x + 2, rect.y + 2, half - 4, rect.h - 4, 16);
+      ctx.fill();
+      ctx.fillStyle = hiActive ? 'rgba(255, 233, 127, 0.24)' : 'rgba(255, 255, 255, 0.04)';
+      ctx.beginPath();
+      ctx.roundRect(rect.x + half + 2, rect.y + 2, half - 4, rect.h - 4, 16);
+      ctx.fill();
+
+      ctx.fillStyle = '#d9ffd9';
+      ctx.font = uiFont(12, 700);
+      ctx.fillText(isHindi() ? 'भाषा' : 'LANG', rect.x + rect.w / 2, rect.y - 10);
+
+      ctx.fillStyle = enActive ? '#d9ffd9' : '#85a68a';
+      ctx.font = uiFont(15, 700);
+      ctx.fillText('EN', rect.x + half * 0.5, rect.y + rect.h * 0.56);
+      ctx.fillStyle = hiActive ? '#ffeaa2' : '#8f9a7e';
+      ctx.font = uiFont(15, 700);
+      ctx.fillText('हिं', rect.x + half * 1.5, rect.y + rect.h * 0.56);
+      ctx.restore();
+    }
+
+    function drawEndingCelebration() {
+      const introDur = getEndingCelebrationDuration();
+      const t = clamp(state.ending.timer / introDur, 0, 1);
+      const blend = getEndingCelebrationBlend();
+      const pulse = 0.6 + 0.4 * Math.sin(state.ending.timer * 6.8);
+      ctx.save();
+      ctx.fillStyle = `rgba(18, 15, 6, ${blend})`;
+      ctx.fillRect(0, 0, state.width, state.height);
+      const flash = 0.18 + (1 - t) * 0.2 + Math.max(0, Math.sin(state.ending.timer * 12)) * 0.08;
+      ctx.fillStyle = `rgba(255, 244, 180, ${flash * blend})`;
+      ctx.fillRect(0, 0, state.width, state.height);
+
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      drawCelebrationFireworks(blend);
+      const titleHeight = drawPixelCelebrationTitle('CONGRATULATIONS!!', state.cx, state.cy - 146, 0.92 + 0.08 * pulse);
+
+      ctx.fillStyle = '#ffbfe9';
+      ctx.shadowColor = '#ff9fdc';
+      ctx.shadowBlur = 18;
+      ctx.font = uiFont(24, 700);
+      ctx.globalAlpha = blend;
+      ctx.fillText(isHindi() ? 'तुमने खेल जीत लिया' : 'YOU WON THE GAME', state.cx, state.cy - 146 + titleHeight + 56);
+
+      ctx.fillStyle = '#f5ffda';
+      ctx.shadowBlur = 0;
+      ctx.font = uiFont(16, 700);
+      ctx.fillText(isHindi() ? 'अब तुम लेडी फ्रॉग से मिलोगे' : 'you will meet the Lady Frog now', state.cx, state.height - 54);
+      ctx.fillStyle = '#fff1b8';
+      ctx.font = uiFont(14, 700);
+      ctx.fillText(isHindi() ? 'फिर खेलने के लिए ENTER दबाओ' : 'PRESS ENTER TO PLAY AGAIN', state.cx, state.height - 30);
       ctx.restore();
     }
 
     function drawFrog() {
       ctx.save();
+      ctx.globalAlpha = getVisibilityFactor('frog');
       if (state.effects.drunk > 0) {
         ctx.shadowBlur = 26;
         ctx.shadowColor = `hsl(${(state.frame * 9) % 360} 100% 70%)`;
@@ -3899,10 +4733,13 @@
 
       const blink = Math.sin(state.frame * 0.04) > 0.96;
       const mouthOpen = state.tongue.state !== 'IDLE';
+      const nightEyes = state.effects.nightVision > 0;
 
       let eyeLine = `  (${blink ? '-' : 'o'}) (${blink ? '-' : 'o'})  `;
       if (state.effects.drunk > 0) {
         eyeLine = ' ((o)) ((o)) ';
+      } else if (nightEyes) {
+        eyeLine = '               ';
       }
 
       const mouthClosed = state.effects.spiral > 0 ? '>(@@)< ' : '>___< ';
@@ -3950,12 +4787,31 @@
       const bob = airborne ? 0 : Math.sin(state.frame * 0.09) * 2;
       const jumpStretch = clamp(state.frog.jumpZ / 220, 0, 0.18);
       const landSquash = state.frog.landSquash;
-      const scaleX = 1 - jumpStretch * 0.12 + landSquash * 0.18;
-      const scaleY = 1 + jumpStretch * 0.1 - landSquash * 0.12;
+      const giant = state.effects.hopeGiant > 0 ? 1 + 0.38 * clamp(state.effects.hopeGiant / 10.5, 0.35, 1) : 1;
+      const scaleX = (1 - jumpStretch * 0.12 + landSquash * 0.18) * giant;
+      const scaleY = (1 + jumpStretch * 0.1 - landSquash * 0.12) * giant;
       ctx.translate(fx, fy + bob);
       ctx.scale(scaleX, scaleY);
       for (let i = 0; i < art.length; i++) {
         ctx.fillText(art[i], 0, -42 + i * 19);
+      }
+      if (nightEyes) {
+        ctx.fillStyle = '#ffe867';
+        ctx.font = '700 15px "Courier Prime", monospace';
+        ctx.fillText('(())   (())', 0, -23);
+        ctx.fillStyle = '#7bd3ff';
+        ctx.font = '700 14px "Courier Prime", monospace';
+        ctx.fillText(' o       o ', 0, -23);
+      }
+      if (state.effects.hopeHalo > 0) {
+        ctx.fillStyle = '#fff1a6';
+        ctx.font = '700 16px "Courier Prime", monospace';
+        ctx.fillText('o---o', 0, -58);
+      }
+      if (state.effects.loveJump > 0) {
+        ctx.fillStyle = '#ffb4e4';
+        ctx.font = '700 14px "Courier Prime", monospace';
+        ctx.fillText('<3', 30, -18);
       }
       ctx.restore();
     }
@@ -3969,6 +4825,7 @@
       const ry = rv.y + bob;
 
       ctx.save();
+      ctx.globalAlpha = getVisibilityFactor('rival', rv.x, rv.y);
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
       ctx.font = '700 19px "Courier Prime", monospace';
@@ -4039,6 +4896,7 @@
       const py = tongue.dx;
       const spinChars = ['|', '/', '-', '\\'];
 
+      ctx.globalAlpha = getVisibilityFactor('frog');
       ctx.fillStyle = '#ff77c7';
       ctx.font = '700 18px "Courier Prime", monospace';
       ctx.textAlign = 'center';
@@ -4075,10 +4933,11 @@
         ctx.fillStyle = state.effects.spiral > 0 ? '#bfe8ff' : '#ff97cf';
         ctx.fillText(state.effects.spiral > 0 ? '@' : 'O', tip.x, tip.y);
       }
+      ctx.globalAlpha = 1;
     }
 
     function drawFloatTexts() {
-      ctx.font = '700 18px "Courier Prime", monospace';
+      ctx.font = uiFont(18, 700);
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
       for (const t of state.floatTexts) {
@@ -4098,12 +4957,12 @@
       ctx.fillStyle = 'rgba(0, 0, 0, 0.5)';
       ctx.fillRect(x - 320, y - 60, 308, 76);
       ctx.fillStyle = '#c6ffd0';
-      ctx.font = '700 14px "Courier Prime", monospace';
-      ctx.fillText('SECRET TEST CHEATS', x - 16, y - 36);
+      ctx.font = uiFont(14, 700);
+      ctx.fillText(isHindi() ? 'गुप्त चीट पिटारा' : 'SECRET TEST CHEATS', x - 16, y - 36);
       ctx.fillStyle = '#ddffdd';
-      ctx.fillText('CTRL+F : NEXT LEVEL', x - 16, y - 16);
-      ctx.fillText('CTRL+O : 360 SWEEP', x - 16, y + 4);
-      ctx.fillText('CTRL+/ : TOGGLE PANEL', x - 16, y + 24);
+      ctx.fillText(isHindi() ? 'CTRL+F : अगला स्तर' : 'CTRL+F : NEXT LEVEL', x - 16, y - 16);
+      ctx.fillText(isHindi() ? 'CTRL+O : 360 झाड़ू' : 'CTRL+O : 360 SWEEP', x - 16, y + 4);
+      ctx.fillText(isHindi() ? 'CTRL+/ : पैनल बदलो' : 'CTRL+/ : TOGGLE PANEL', x - 16, y + 24);
     }
 
     function drawOverlays() {
@@ -4113,45 +4972,47 @@
       if (state.mode === MODE.START) {
         ctx.fillStyle = 'rgba(0, 0, 0, 0.56)';
         ctx.fillRect(0, 0, state.width, state.height);
+        drawLanguageToggle();
 
         ctx.fillStyle = '#d3ffd3';
         ctx.font = '700 40px "Courier Prime", monospace';
         ctx.fillText('ASCII FROG', state.cx, state.cy - 186);
         const infoY = state.cy + 108;
         ctx.fillStyle = '#89ff89';
-        ctx.font = '700 18px "Courier Prime", monospace';
-        ctx.fillText('STORY', state.cx, infoY);
-        ctx.font = '700 16px "Courier Prime", monospace';
+        ctx.font = uiFont(18, 700);
+        ctx.fillText(isHindi() ? 'कहानी' : 'STORY', state.cx, infoY);
+        ctx.font = uiFont(16, 700);
         ctx.fillStyle = '#c3eec3';
-        ctx.fillText('ASCII Frog starts in the swamps and rises through rival zones.', state.cx, infoY + 24);
-        ctx.fillText('Blue Frog bumps, Chameleon shoots, and flies evolve every level.', state.cx, infoY + 48);
-        ctx.fillText('Survive the final challenge and reach the heart-shower ending.', state.cx, infoY + 72);
+        ctx.fillText(isHindi() ? 'ASCII Frog दलदल से चलकर राइवल इलाकों तक पहुँचता है।' : 'ASCII Frog starts in the swamps and rises through rival zones.', state.cx, infoY + 24);
+        ctx.fillText(isHindi() ? 'नीला मेंढक धड़ाम से टकराता है, गिरगिट चाल चलता है, और हर स्तर पर मक्खियाँ नई चाल दिखाती हैं।' : 'Blue Frog bumps, Chameleon shoots, and flies evolve every level.', state.cx, infoY + 48);
+        ctx.fillText(isHindi() ? 'ASCII Frog का मिशन है Lady Frog तक पहुँचना, जिसे गिरगिट ने पकड़ रखा है।' : 'ASCII Frog is on a mission to reach Lady Frog, captured by Chameleon.', state.cx, infoY + 72);
+        ctx.fillText(isHindi() ? 'अंतिम चुनौती पार करो और दिलों की बारिश वाले अंत तक पहुँचो।' : 'Survive the final challenge and reach the heart-shower ending.', state.cx, infoY + 96);
 
         ctx.fillStyle = '#89ff89';
-        ctx.font = '700 18px "Courier Prime", monospace';
-        ctx.fillText('HOW TO PLAY', state.cx, infoY + 106);
-        ctx.font = '700 15px "Courier Prime", monospace';
+        ctx.font = uiFont(18, 700);
+        ctx.fillText(isHindi() ? 'कैसे खेलें' : 'HOW TO PLAY', state.cx, infoY + 130);
+        ctx.font = uiFont(15, 700);
         ctx.fillStyle = '#d4ffd4';
-        ctx.fillText('ARROWS: SHOOT (2 ARROWS = DIAGONAL)   |   SPACE+ARROW: JUMP (L3+)', state.cx, infoY + 128);
-        ctx.fillText('P: PAUSE   F: FULLSCREEN   ENTER: START/RESTART', state.cx, infoY + 148);
+        ctx.fillText(isHindi() ? 'तीर: जीभ चलाओ (2 तीर = तिरछा)   |   SPACE+तीर: छलांग (L3+)' : 'ARROWS: SHOOT (2 ARROWS = DIAGONAL)   |   SPACE+ARROW: JUMP (L3+)', state.cx, infoY + 152);
+        ctx.fillText(isHindi() ? 'P: रोकें   F: फुलस्क्रीन   ENTER: शुरू/फिर शुरू' : 'P: PAUSE   F: FULLSCREEN   ENTER: START/RESTART', state.cx, infoY + 172);
 
         ctx.fillStyle = '#89ff89';
-        ctx.font = '700 18px "Courier Prime", monospace';
-        ctx.fillText('FLY TYPES + EFFECTS', state.cx, infoY + 178);
-        ctx.font = '700 15px "Courier Prime", monospace';
-        ctx.fillStyle = '#ffe867'; ctx.fillText('& NORMAL +10', state.cx - 280, infoY + 200);
-        ctx.fillStyle = '#9eff64'; ctx.fillText('h GRASSHOPPER BURSTS +16', state.cx - 40, infoY + 200);
-        ctx.fillStyle = '#ff6767'; ctx.fillText('[*] BOMB PENALTY', state.cx + 220, infoY + 200);
-        ctx.fillStyle = '#fff27f'; ctx.fillText('{o} FIREFLY BOOST+TIME FREEZE', state.cx - 220, infoY + 222);
-        ctx.fillStyle = '#c173ff'; ctx.fillText('!p! POISON CONFUSES AIM', state.cx + 10, infoY + 222);
-        ctx.fillStyle = '#7bd3ff'; ctx.fillText('@@ SPIRAL WIDER CATCH', state.cx + 250, infoY + 222);
+        ctx.font = uiFont(18, 700);
+        ctx.fillText(isHindi() ? 'मक्खियाँ और असर' : 'FLY TYPES + EFFECTS', state.cx, infoY + 204);
+        ctx.font = uiFont(15, 700);
+        ctx.fillStyle = '#ffe867'; ctx.fillText(isHindi() ? '& सामान्य +10' : '& NORMAL +10', state.cx - 280, infoY + 226);
+        ctx.fillStyle = '#9eff64'; ctx.fillText(isHindi() ? 'h ग्रासहॉपर धूम छलाँग +16' : 'h GRASSHOPPER BURSTS +16', state.cx - 40, infoY + 226);
+        ctx.fillStyle = '#ff6767'; ctx.fillText(isHindi() ? '[*] बम दंड' : '[*] BOMB PENALTY', state.cx + 220, infoY + 226);
+        ctx.fillStyle = '#fff27f'; ctx.fillText(isHindi() ? '{o} जुगनू रात-दृष्टि' : '{o} FIREFLY NIGHT VISION', state.cx - 260, infoY + 248);
+        ctx.fillStyle = '#bfeeff'; ctx.fillText(isHindi() ? '}{ घंटे-सा समय रोकता है' : '}{ HOURGLASS FREEZES TIME', state.cx + 10, infoY + 248);
+        ctx.fillStyle = '#c173ff'; ctx.fillText(isHindi() ? '!p! ज़हर निशाना भटकाए' : '!p! POISON CONFUSES AIM', state.cx + 285, infoY + 248);
 
-        ctx.font = '700 16px "Courier Prime", monospace';
+        ctx.font = uiFont(16, 700);
         ctx.fillStyle = '#a6d9a6';
-        ctx.fillText('CLICK OR TAP ONCE TO WAKE BIT MUSIC', state.cx, infoY + 244);
+        ctx.fillText(isHindi() ? 'बिट संगीत जगाने के लिए एक बार क्लिक या टैप करो' : 'CLICK OR TAP ONCE TO WAKE BIT MUSIC', state.cx, infoY + 270);
         ctx.fillStyle = '#89ff89';
-        ctx.font = '700 22px "Courier Prime", monospace';
-        ctx.fillText('PRESS ENTER OR ARROW TO START', state.cx, infoY + 268);
+        ctx.font = uiFont(22, 700);
+        ctx.fillText(isHindi() ? 'शुरू करने के लिए ENTER या तीर दबाओ' : 'PRESS ENTER OR ARROW TO START', state.cx, infoY + 294);
       }
 
       if (state.mode === MODE.LEVEL_UP) {
@@ -4159,10 +5020,10 @@
         ctx.fillRect(0, 0, state.width, state.height);
         if (state.frame % 20 < 14) {
           ctx.fillStyle = '#ffef86';
-          ctx.font = '700 48px "Courier Prime", monospace';
-          ctx.fillText(`LEVEL ${state.level} CLEAR`, state.cx, state.cy - 78);
-          ctx.font = '700 22px "Courier Prime", monospace';
-          ctx.fillText(`NEXT: LEVEL ${state.level + 1}`, state.cx, state.cy - 34);
+          ctx.font = uiFont(48, 700);
+          ctx.fillText(isHindi() ? `स्तर ${state.level} पूरा` : `LEVEL ${state.level} CLEAR`, state.cx, state.cy - 78);
+          ctx.font = uiFont(22, 700);
+          ctx.fillText(isHindi() ? `अगला: स्तर ${state.level + 1}` : `NEXT: LEVEL ${state.level + 1}`, state.cx, state.cy - 34);
         }
       }
 
@@ -4170,11 +5031,16 @@
         ctx.fillStyle = 'rgba(0, 0, 0, 0.45)';
         ctx.fillRect(0, 0, state.width, state.height);
         ctx.fillStyle = '#f2fff2';
-        ctx.font = '700 48px "Courier Prime", monospace';
-        ctx.fillText('PAUSED', state.cx, state.cy - 20);
+        ctx.font = uiFont(48, 700);
+        ctx.fillText(isHindi() ? 'रुका हुआ' : 'PAUSED', state.cx, state.cy - 20);
       }
 
       if (state.mode === MODE.WIN) {
+        const celebrationOnly = state.ending.timer < getEndingCelebrationDuration() - getEndingCelebrationFadeWindow();
+        if (celebrationOnly) {
+          drawEndingCelebration();
+          return;
+        }
         const starryBlend = getEndingStarryBlend();
         const heartAlpha = clamp(1 - starryBlend * 0.92, 0, 1);
         ctx.fillStyle = `rgba(0, 0, 0, ${0.58 + starryBlend * 0.1})`;
@@ -4243,6 +5109,12 @@
           drawEndingStarryCouple(starryBlend);
         }
         drawEndingEverAfterText(starryBlend, 0.96);
+        if (state.ending.timer < getEndingCelebrationDuration()) {
+          drawEndingCelebration();
+        }
+        ctx.fillStyle = '#fff1b8';
+        ctx.font = uiFont(14, 700);
+        ctx.fillText(isHindi() ? 'फिर खेलने के लिए ENTER दबाओ' : 'PRESS ENTER TO PLAY AGAIN', state.cx, state.height - 10);
         ctx.globalAlpha = 1;
         ctx.shadowBlur = 0;
       }
@@ -4251,26 +5123,26 @@
         ctx.fillStyle = 'rgba(0, 0, 0, 0.62)';
         ctx.fillRect(0, 0, state.width, state.height);
         ctx.fillStyle = '#ff9ea6';
-        ctx.font = '700 56px "Courier Prime", monospace';
-        ctx.fillText('GAME OVER', state.cx, state.cy - 72);
+        ctx.font = uiFont(56, 700);
+        ctx.fillText(isHindi() ? 'खेल समाप्त' : 'GAME OVER', state.cx, state.cy - 72);
         ctx.fillStyle = '#f2ffef';
-        ctx.font = '700 24px "Courier Prime", monospace';
-        ctx.fillText(`SCORE ${state.score}   HIGH ${state.highScore}`, state.cx, state.cy - 22);
+        ctx.font = uiFont(24, 700);
+        ctx.fillText(isHindi() ? `स्कोर ${state.score}   उच्च ${state.highScore}` : `SCORE ${state.score}   HIGH ${state.highScore}`, state.cx, state.cy - 22);
         const rivalResult = [state.rival.result, state.rival2.result].find(Boolean);
         if (rivalResult) {
           ctx.fillStyle = '#ffcdb4';
-          ctx.font = '700 21px "Courier Prime", monospace';
+          ctx.font = uiFont(21, 700);
           ctx.fillText(rivalResult, state.cx, state.cy + 10);
         }
         ctx.fillStyle = '#9dffb4';
-        ctx.font = '700 22px "Courier Prime", monospace';
-        ctx.fillText('PRESS ENTER TO RESTART', state.cx, state.cy + 54);
+        ctx.font = uiFont(22, 700);
+        ctx.fillText(isHindi() ? 'फिर शुरू करने के लिए ENTER दबाओ' : 'PRESS ENTER TO RESTART', state.cx, state.cy + 54);
       }
 
       if (state.levelIntroTimer > 0 && state.mode === MODE.PLAYING) {
         ctx.globalAlpha = clamp(state.levelIntroTimer / 2.1, 0, 1);
         ctx.fillStyle = '#f5ffe2';
-        ctx.font = '700 24px "Courier Prime", monospace';
+        ctx.font = uiFont(24, 700);
         ctx.fillText(state.levelIntroText, state.cx, 54);
         ctx.globalAlpha = 1;
       }
@@ -4278,7 +5150,11 @@
 
     function draw() {
       if (state.mode === MODE.WIN) {
-        drawBackground();
+        if (state.ending.timer >= getEndingCelebrationDuration() - getEndingCelebrationFadeWindow()) {
+          drawBackground();
+        } else {
+          ctx.clearRect(0, 0, state.width, state.height);
+        }
         drawOverlays();
         return;
       }
@@ -4324,7 +5200,11 @@
     }
 
     function bindControls() {
-      window.addEventListener('pointerdown', () => {
+      window.addEventListener('pointerdown', (e) => {
+        if (maybeHandleStartScreenPointer(e)) {
+          unlockAudio();
+          return;
+        }
         unlockAudio();
         startBitMusic();
       });
@@ -4374,6 +5254,11 @@
 
         if (key === 'm') {
           toggleMute();
+          return;
+        }
+
+        if (key === 'l' && state.mode === MODE.START) {
+          toggleLanguage();
           return;
         }
 
@@ -4443,7 +5328,13 @@
         const trigger = (ev) => {
           ev.preventDefault();
           unlockAudio();
-          shootTongue(dir);
+          state.frog.facing = dir;
+          if (canUseDirectionalSight(dir)) {
+            handleNightVisionArrow(dir);
+          } else {
+            state.directionalSight.armed = false;
+            shootTongue(dir);
+          }
         };
         btn.addEventListener('pointerdown', trigger);
         btn.addEventListener('touchstart', trigger, { passive: false });
@@ -4461,6 +5352,7 @@
       const tongue = state.tongue;
       const payload = {
         coordinate_system: 'origin=(0,0) top-left; +x right; +y down',
+        language: state.language,
         mode: state.mode,
         score: state.score,
         high_score: state.highScore,
@@ -4473,7 +5365,8 @@
           wind_x: Number(state.weather.windX.toFixed(2)),
           rain: state.weather.rain,
           snow: state.weather.snow,
-          lightning_s: Number(state.weather.lightningTimer.toFixed(2))
+          lightning_s: Number(state.weather.lightningTimer.toFixed(2)),
+          darkness: Number(state.weather.darkness.toFixed(2))
         },
         ai_director: {
           enabled: state.aiDirector.enabled,
@@ -4489,6 +5382,12 @@
           max_health: Number(state.health.maxFrog.toFixed(1)),
           confused_eyes: state.effects.drunk > 0,
           glowing: state.effects.glow > 0,
+          night_vision: state.effects.nightVision > 0,
+          love_jump: state.effects.loveJump > 0,
+          hope_halo: state.effects.hopeHalo > 0,
+          directional_sight: state.directionalSight.timer > 0,
+          directional_dir: state.directionalSight.dir,
+          directional_ready: state.directionalSight.armed,
           jump_height: Number(state.frog.jumpZ.toFixed(1)),
           jump_cooldown_s: Number(state.frog.jumpCooldown.toFixed(2)),
           facing: state.frog.facing
@@ -4507,14 +5406,26 @@
           confused_s: Number(Math.max(0, state.effects.drunk).toFixed(2)),
           spiral_s: Number(Math.max(0, state.effects.spiral).toFixed(2)),
           medicinal_s: Number(Math.max(0, state.effects.medicinal).toFixed(2)),
-          time_freeze_s: Number(Math.max(0, state.effects.timeFreeze).toFixed(2))
+          time_freeze_s: Number(Math.max(0, state.effects.timeFreeze).toFixed(2)),
+          night_vision_s: Number(Math.max(0, state.effects.nightVision).toFixed(2)),
+          love_jump_s: Number(Math.max(0, state.effects.loveJump).toFixed(2)),
+          love_rain_s: Number(Math.max(0, state.effects.loveRain).toFixed(2)),
+          hope_halo_s: Number(Math.max(0, state.effects.hopeHalo).toFixed(2)),
+          hope_giant_s: Number(Math.max(0, state.effects.hopeGiant).toFixed(2)),
+          directional_sight_s: Number(Math.max(0, state.directionalSight.timer).toFixed(2)),
+          directional_ready: state.directionalSight.armed
         },
         quest: {
           active: state.quest.active,
           completed: state.quest.completed,
           label: state.quest.label,
           target: state.quest.target,
-          progress: state.quest.progress
+          progress: state.quest.progress,
+          words: state.quest.words.slice(),
+          word_index: state.quest.wordIndex,
+          timer: Number(state.quest.timer.toFixed(2)),
+          duration: Number(state.quest.duration.toFixed(2)),
+          timed_out: state.quest.timedOut
         },
         flies: state.flies.slice(0, 30).map((f) => ({
           type: f.id,
@@ -4562,6 +5473,7 @@
           result: state.rival2.result
         },
         ending: {
+          phase: getEndingPhase(),
           scene: getEndingScene(),
           scene_blend: Number(getEndingStarryBlend().toFixed(2)),
           hearts_visible: state.ending.hearts.length,
@@ -4596,8 +5508,10 @@
     function init() {
       resize();
       bindControls();
+      localStorage.removeItem('ascii-frog-language');
       resetRun();
       state.mode = MODE.START;
+      updateLanguageUi();
       updateHud();
       draw();
       if (rafId) cancelAnimationFrame(rafId);

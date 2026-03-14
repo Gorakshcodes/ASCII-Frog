@@ -78,7 +78,7 @@ function clamp(v, lo, hi) {
 }
 
 function normalizePool(raw) {
-  const keys = ['normal', 'grasshopper', 'bomb', 'firefly', 'poison', 'spiral', 'medicinal', 'letter'];
+  const keys = ['normal', 'grasshopper', 'bomb', 'firefly', 'hourglass', 'poison', 'spiral', 'medicinal', 'letter'];
   const out = {};
   let total = 0;
   for (const k of keys) {
@@ -106,6 +106,7 @@ function sanitizeDirective(raw) {
     environment: {
       wind_scale: clamp(Number(env.wind_scale || 1), 0.55, 1.6),
       lightning_scale: clamp(Number(env.lightning_scale || 1), 0.5, 2.1),
+      darkness_scale: clamp(Number(env.darkness_scale || 1), 0.35, 1.8),
       rain_mode: ['keep', 'on', 'off'].includes(env.rain_mode) ? env.rain_mode : 'keep',
       snow_mode: ['keep', 'on', 'off'].includes(env.snow_mode) ? env.snow_mode : 'keep',
       high_wind_mode: ['keep', 'on', 'off'].includes(env.high_wind_mode) ? env.high_wind_mode : 'keep'
@@ -119,6 +120,7 @@ function sanitizeDirective(raw) {
         grasshopper: 0.16,
         bomb: 0.1,
         firefly: 0.1,
+        hourglass: 0.08,
         poison: 0.1,
         spiral: 0.1,
         medicinal: 0.08
@@ -153,6 +155,7 @@ function heuristicDirective(gameState) {
     environment: {
       wind_scale: manyFlies ? 0.86 : 1 + pressure * 0.1,
       lightning_scale: clamp(0.9 + pressure * 0.45, 0.7, 1.9),
+      darkness_scale: level >= 11 ? (behind ? 0.72 : 1.16) : 1,
       rain_mode: level >= 4 && Math.random() < 0.15 ? 'on' : 'keep',
       snow_mode: level >= 8 && Math.random() < 0.12 ? 'on' : 'keep',
       high_wind_mode: level >= 9 && Math.random() < 0.25 ? 'on' : 'keep'
@@ -166,6 +169,7 @@ function heuristicDirective(gameState) {
         grasshopper: clamp(0.16 + pressure * 0.05, 0.1, 0.25),
         bomb: clamp(0.08 + pressure * 0.08, 0.03, 0.22),
         firefly: clamp(0.08 + (behind ? 0.08 : 0), 0.05, 0.22),
+        hourglass: clamp(0.06 + (behind ? 0.07 : 0), 0.04, 0.18),
         poison: clamp(0.06 + pressure * 0.05, 0.03, 0.18),
         spiral: clamp(0.08 + pressure * 0.06, 0.03, 0.24),
         medicinal: clamp(0.06 + (behind ? 0.06 : 0), 0.04, 0.2),
@@ -199,12 +203,13 @@ async function openAiDirective(gameState) {
           '{',
           '  "duration_s": number 4..18,',
           '  "flavor_text": short string,',
-          '  "environment": { "wind_scale": number, "lightning_scale": number, "rain_mode": "keep|on|off", "snow_mode": "keep|on|off", "high_wind_mode": "keep|on|off" },',
-          '  "spawning": { "cap_delta": integer, "interval_scale": number, "extra_chance_delta": number, "pool_overrides": { normal, grasshopper, bomb, firefly, poison, spiral, medicinal, letter } },',
+          '  "environment": { "wind_scale": number, "lightning_scale": number, "darkness_scale": number, "rain_mode": "keep|on|off", "snow_mode": "keep|on|off", "high_wind_mode": "keep|on|off" },',
+          '  "spawning": { "cap_delta": integer, "interval_scale": number, "extra_chance_delta": number, "pool_overrides": { normal, grasshopper, bomb, firefly, hourglass, poison, spiral, medicinal, letter } },',
           '  "flies": { "speed_scale": number, "frog_pull_scale": number },',
           '  "rivals": { "speed_scale": number, "aggression_scale": number, "corner_hop_scale": number, "tongue_rate_scale": number }',
           '}',
-          'Balance rule: if player is struggling, ease pressure and offer recovery windows. If player dominates, increase challenge.'
+          'Balance rule: if player is struggling, ease pressure and offer recovery windows. If player dominates, increase challenge.',
+          'On rival levels you may use darkness_scale to create temporary low-visibility pressure, but leave meaningful recovery via fireflies and calmer windows.'
         ].join('\n')
       },
       {
