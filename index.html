@@ -136,9 +136,10 @@
       pointer-events: none;
     }
 
-    .action-grid {
+    .action-pad {
       display: grid;
-      grid-template-columns: repeat(2, minmax(66px, 82px));
+      grid-template-columns: repeat(2, 64px);
+      grid-template-rows: repeat(2, 64px);
       gap: 8px;
       pointer-events: none;
     }
@@ -185,12 +186,11 @@
     }
 
     .action-btn {
-      width: 76px;
-      height: 50px;
-      font-size: 12px;
-      letter-spacing: 0.04em;
+      width: 64px;
+      height: 64px;
+      font-size: 28px;
       font-weight: 700;
-      padding: 0 6px;
+      padding: 0;
     }
 
     .d-pad {
@@ -207,6 +207,32 @@
       pointer-events: auto;
     }
 
+    .jump-core {
+      border-radius: 999px;
+      font-size: 30px;
+      background: rgba(22, 40, 22, 0.88);
+      border-color: rgba(240, 255, 192, 0.28);
+    }
+
+    #mobile-utility {
+      position: absolute;
+      left: 50%;
+      bottom: 0;
+      transform: translateX(-50%);
+      display: flex;
+      gap: 10px;
+      pointer-events: none;
+    }
+
+    .utility-btn {
+      width: 40px;
+      height: 40px;
+      border-radius: 999px;
+      font-size: 20px;
+      background: rgba(16, 24, 16, 0.78);
+      border-color: rgba(208, 255, 208, 0.28);
+    }
+
     .spacer {
       width: 58px;
       height: 58px;
@@ -217,20 +243,40 @@
         display: flex;
       }
 
+      #help {
+        display: none;
+      }
+
+      #hud {
+        left: max(8px, env(safe-area-inset-left));
+        top: max(8px, env(safe-area-inset-top));
+      }
+
+      #hud .panel {
+        min-width: min(54vw, 252px);
+        padding: 7px 9px;
+      }
+
+      #hud .line {
+        font-size: 12px;
+      }
+
       #flashBar {
-        bottom: calc(max(12px, env(safe-area-inset-bottom)) + 124px);
+        bottom: calc(max(12px, env(safe-area-inset-bottom)) + 132px);
+        min-width: min(72vw, 360px);
       }
     }
 
     @media (max-width: 640px), (max-height: 860px) {
-      .action-grid {
-        grid-template-columns: repeat(2, minmax(62px, 74px));
+      .action-btn {
+        width: 58px;
+        height: 58px;
+        font-size: 24px;
       }
 
-      .action-btn {
-        width: 70px;
-        height: 46px;
-        font-size: 11px;
+      .action-pad {
+        grid-template-columns: repeat(2, 58px);
+        grid-template-rows: repeat(2, 58px);
       }
 
       .d-pad {
@@ -242,6 +288,12 @@
       .spacer {
         width: 54px;
         height: 54px;
+      }
+
+      .utility-btn {
+        width: 36px;
+        height: 36px;
+        font-size: 18px;
       }
     }
   </style>
@@ -274,13 +326,11 @@
 
     <div id="mobile-controls" aria-label="Touch controls">
       <div class="mobile-cluster" id="mobile-actions">
-        <div class="action-grid">
-          <button class="d-btn action-btn" id="btn-start" aria-label="Start or restart">START</button>
-          <button class="d-btn action-btn" id="btn-pause" aria-label="Pause or resume">PAUSE</button>
-          <button class="d-btn action-btn" id="btn-jump" aria-label="Arm jump">JUMP</button>
-          <button class="d-btn action-btn" id="btn-line" aria-label="Medicinal line shot">LINE</button>
-          <button class="d-btn action-btn" id="btn-mute" aria-label="Mute audio">MUTE</button>
-          <button class="d-btn action-btn" id="btn-full" aria-label="Toggle fullscreen">FULL</button>
+        <div class="action-pad">
+          <button class="d-btn action-btn" id="btn-start" aria-label="Start or restart">↻</button>
+          <button class="d-btn action-btn" id="btn-line" aria-label="Medicinal line shot">✦</button>
+          <button class="d-btn action-btn" id="btn-full" aria-label="Toggle fullscreen">⛶</button>
+          <button class="d-btn action-btn" id="btn-reset" aria-label="Reset run">◎</button>
         </div>
       </div>
 
@@ -290,12 +340,17 @@
           <button class="d-btn" id="btn-up" aria-label="Shoot up">▲</button>
           <div class="spacer" aria-hidden="true"></div>
           <button class="d-btn" id="btn-left" aria-label="Shoot left">◄</button>
-          <div class="spacer" aria-hidden="true"></div>
+          <button class="d-btn jump-core" id="btn-jump" aria-label="Arm jump">○</button>
           <button class="d-btn" id="btn-right" aria-label="Shoot right">►</button>
           <div class="spacer" aria-hidden="true"></div>
           <button class="d-btn" id="btn-down" aria-label="Shoot down">▼</button>
           <div class="spacer" aria-hidden="true"></div>
         </div>
+      </div>
+
+      <div id="mobile-utility" aria-label="Quick controls">
+        <button class="d-btn utility-btn" id="btn-pause" aria-label="Pause or resume">❚❚</button>
+        <button class="d-btn utility-btn" id="btn-mute" aria-label="Mute audio">♪</button>
       </div>
     </div>
   </div>
@@ -319,6 +374,7 @@
     const hud = document.getElementById('hud');
     const help = document.getElementById('help');
     const btnStart = document.getElementById('btn-start');
+    const btnReset = document.getElementById('btn-reset');
     const btnPause = document.getElementById('btn-pause');
     const btnJump = document.getElementById('btn-jump');
     const btnLine = document.getElementById('btn-line');
@@ -433,61 +489,67 @@
       {
         level: 1,
         intro: 'L1: READ THE ALTERNATION',
-        goal: 120,
+        goal: 160,
         cap: 8,
         interval: 0.95,
         extraChance: 0.12,
         opening: 5,
+        targetTime: 16,
         pool: { normal: 1 }
       },
       {
         level: 2,
         intro: 'L2: FEEL THE CYCLE',
-        goal: 260,
+        goal: 220,
         cap: 10,
         interval: 0.86,
         extraChance: 0.2,
         opening: 6,
+        targetTime: 19,
         pool: { normal: 0.78, grasshopper: 0.22 }
       },
       {
         level: 3,
         intro: 'L3: READ THE LANES',
-        goal: 430,
+        goal: 300,
         cap: 11,
         interval: 0.8,
         extraChance: 0.24,
         opening: 7,
+        targetTime: 23,
         pool: { normal: 0.68, grasshopper: 0.2, medicinal: 0.12 }
       },
       {
         level: 4,
         intro: 'L4: HOLD THE GEOMETRY',
-        goal: 650,
+        goal: 400,
         cap: 12,
         interval: 0.74,
         extraChance: 0.28,
         opening: 7,
+        targetTime: 27,
         pool: { normal: 0.56, grasshopper: 0.2, medicinal: 0.1, bomb: 0.14 }
       },
       {
         level: 5,
         intro: 'L5: FOLLOW THE SEQUENCE',
-        goal: 920,
+        goal: 520,
         cap: 13,
         interval: 0.68,
         extraChance: 0.32,
         opening: 8,
+        targetTime: 31,
         pool: { normal: 0.44, grasshopper: 0.18, medicinal: 0.08, bomb: 0.12, firefly: 0.1, hourglass: 0.08 }
       },
       {
         level: 6,
         intro: 'L6: TRACK THE TIDE',
-        goal: 1260,
+        goal: 650,
         cap: 14,
         interval: 0.63,
         extraChance: 0.35,
         opening: 8,
+        targetTime: 35,
         pool: { normal: 0.36, grasshopper: 0.18, medicinal: 0.08, bomb: 0.14, firefly: 0.09, hourglass: 0.07, poison: 0.08 }
       },
       {
@@ -498,60 +560,68 @@
         interval: 0.46,
         extraChance: 0.58,
         opening: 12,
+        targetTime: 36,
+        letterTime: 36,
         pool: { letter: 1 }
       },
       {
         level: 8,
         intro: 'L8: REMEMBER THE GLOW',
-        goal: 2120,
+        goal: 760,
         cap: 15,
         interval: 0.57,
         extraChance: 0.4,
         opening: 9,
+        targetTime: 39,
         pool: { normal: 0.24, grasshopper: 0.14, medicinal: 0.08, bomb: 0.13, firefly: 0.1, hourglass: 0.08, poison: 0.09, spiral: 0.14 }
       },
       {
         level: 9,
         intro: 'L9: HOLD TWO RULES',
-        goal: 2680,
+        goal: 920,
         cap: 16,
         interval: 0.52,
         extraChance: 0.44,
         opening: 10,
+        targetTime: 43,
         pool: { normal: 0.18, grasshopper: 0.14, medicinal: 0.08, bomb: 0.15, firefly: 0.1, hourglass: 0.08, poison: 0.09, spiral: 0.18 }
       },
       {
         level: 10,
         intro: 'L10: WATCH THE FALSE SHIFT',
-        goal: 3400,
+        goal: 1120,
         cap: 18,
         interval: 0.47,
         extraChance: 0.5,
         opening: 10,
+        targetTime: 47,
         pool: { normal: 0.14, grasshopper: 0.13, medicinal: 0.08, bomb: 0.16, firefly: 0.11, hourglass: 0.08, poison: 0.1, spiral: 0.2 }
       },
       {
         level: 11,
         intro: 'L11: OUTTHINK THE RIVAL',
-        goal: 4300,
+        goal: 1380,
         cap: 19,
         interval: 0.43,
         extraChance: 0.56,
         opening: 12,
+        targetTime: 52,
         pool: { normal: 0.11, grasshopper: 0.13, medicinal: 0.08, bomb: 0.17, firefly: 0.13, hourglass: 0.08, poison: 0.1, spiral: 0.2 },
-        rival: { type: 'bluefrog', name: 'BLUE FROG', target: 4300, speed: 1.05, aggression: 1 }
+        rival: { type: 'bluefrog', name: 'BLUE FROG', target: 1180, speed: 1.08, aggression: 1.05 }
       },
       {
         level: 12,
         intro: 'L12: SURVIVE THE FINAL MAZE',
-        goal: 5800,
+        goal: 1600,
         cap: 22,
         interval: 0.34,
         extraChance: 0.68,
         opening: 14,
+        targetTime: 58,
+        finalTime: 38,
         pool: { normal: 0.09, grasshopper: 0.13, medicinal: 0.08, bomb: 0.18, firefly: 0.11, hourglass: 0.08, poison: 0.13, spiral: 0.2 },
-        rival: { type: 'chameleon', name: 'CHAMELEON', target: 5800, speed: 1.2, aggression: 1.35 },
-        rival2: { type: 'bluefrog', name: 'BLUE FROG', target: 5800, speed: 1.1, aggression: 1.1 }
+        rival: { type: 'chameleon', name: 'CHAMELEON', target: 1320, speed: 1.24, aggression: 1.38 },
+        rival2: { type: 'bluefrog', name: 'BLUE FROG', target: 1240, speed: 1.14, aggression: 1.16 }
       }
     ];
 
@@ -600,6 +670,30 @@
       12: { title: 'अंतिम बचाव', objective: 'गोली, धक्के और भीड़ से आगे बने रहो।', cue: 'गलियारा पढ़ो और चलते रहो', world: 'अंतिम राह' }
     };
 
+    function createTelemetryBucket() {
+      return {
+        seconds: 0,
+        shots: 0,
+        catches: 0,
+        jumps: 0,
+        lineShots: 0,
+        specialUses: 0,
+        correctLetters: 0,
+        wrongLetters: 0,
+        bombHits: 0,
+        rivalHits: 0,
+        damageEvents: 0,
+        recoveryCatches: 0,
+        supportCatches: 0,
+        darkSightScans: 0,
+        darkSightShots: 0,
+        multiCatchBursts: 0,
+        rowChains: 0,
+        lowHealthTime: 0,
+        typeCounts: {}
+      };
+    }
+
     const state = {
       width: 0,
       height: 0,
@@ -612,6 +706,9 @@
       highScore: Number(localStorage.getItem('ascii-frog-high-score') || 0),
       level: 1,
       maxLevel: 12,
+      levelScoreStart: 0,
+      levelElapsed: 0,
+      runElapsed: 0,
       lives: 5,
       combo: 1,
       comboChain: 0,
@@ -829,6 +926,7 @@
         outSpeed: 0,
         retractSpeed: 0,
         caughtFlies: [],
+        rowChain: false,
         spinPhase: 0,
         drunkShot: false,
         drunkArcDir: 1
@@ -842,7 +940,14 @@
         toY: 0,
         flies: 0
       },
-      mobileJumpArmed: false
+      mobileJumpArmed: false,
+      cognitive: {
+        run: createTelemetryBucket(),
+        level: createTelemetryBucket(),
+        lastDamageAtRun: -99,
+        lastDamageAtLevel: -99,
+        styleTag: 'BALANCED'
+      }
     };
 
     function isHindi() {
@@ -955,22 +1060,25 @@
 
     function updateMobileControlsState() {
       if (!btnStart) return;
-      btnStart.textContent = isHindi()
-        ? ((state.mode === MODE.PLAYING || state.mode === MODE.PAUSED) ? 'फिर से' : 'शुरू')
-        : ((state.mode === MODE.PLAYING || state.mode === MODE.PAUSED) ? 'RESET' : 'START');
-      btnPause.textContent = isHindi()
-        ? (state.mode === MODE.PAUSED ? 'चलो' : 'रोकें')
-        : (state.mode === MODE.PAUSED ? 'GO' : 'PAUSE');
-      btnJump.textContent = isHindi() ? (state.mobileJumpArmed ? 'कूदो ●' : 'कूदो') : (state.mobileJumpArmed ? 'JUMP ●' : 'JUMP');
-      btnLine.textContent = isHindi() ? 'लाइन' : 'LINE';
-      btnMute.textContent = isHindi() ? (audioState.muted ? 'ध्वनि' : 'म्यूट') : (audioState.muted ? 'SOUND' : 'MUTE');
-      btnFull.textContent = isHindi() ? 'फुल' : 'FULL';
+      btnStart.textContent = state.mode === MODE.START || state.mode === MODE.GAME_OVER || state.mode === MODE.WIN ? '▷' : '↻';
+      btnReset.textContent = '◎';
+      btnPause.textContent = state.mode === MODE.PAUSED ? '▶' : '❚❚';
+      btnJump.textContent = state.mobileJumpArmed ? '●' : '○';
+      btnLine.textContent = '✦';
+      btnMute.textContent = audioState.muted ? '∅' : '♪';
+      btnFull.textContent = '⛶';
 
+      btnStart.classList.toggle('is-disabled', false);
+      btnReset.classList.toggle('is-disabled', state.mode === MODE.START);
       btnPause.classList.toggle('is-disabled', state.mode === MODE.START || state.mode === MODE.WIN || state.mode === MODE.GAME_OVER);
       btnJump.classList.toggle('is-disabled', state.mode !== MODE.PLAYING || state.level < 3);
       btnJump.classList.toggle('is-armed', state.mobileJumpArmed);
       btnLine.classList.toggle('is-disabled', state.mode !== MODE.PLAYING || state.effects.medicinal <= 0);
       btnMute.classList.toggle('is-armed', audioState.muted);
+    }
+
+    function isTouchLayout() {
+      return window.matchMedia('(max-width: 920px), (hover: none), (pointer: coarse)').matches;
     }
 
     function toggleLanguage() {
@@ -1997,6 +2105,7 @@
       state.directionalSight.dir = dir;
       state.directionalSight.timer = 0.86;
       state.directionalSight.armed = true;
+      recordDarkSightScan();
     }
 
     function queueArrowShot(primaryCode) {
@@ -2024,6 +2133,181 @@
 
     function currentConfig() {
       return getLevelConfig(state.level);
+    }
+
+    function getLevelScore() {
+      return Math.max(0, state.score - state.levelScoreStart);
+    }
+
+    function getLevelTargetTime() {
+      return Number(currentConfig().targetTime || (14 + state.level * 4));
+    }
+
+    function getLevelProgressRatio() {
+      if (state.levelGoal <= 0) return 0;
+      return clamp(getLevelScore() / Math.max(1, state.levelGoal), 0, 1.35);
+    }
+
+    function forEachTelemetryBucket(visitor) {
+      visitor(state.cognitive.run);
+      visitor(state.cognitive.level);
+    }
+
+    function bumpTelemetryType(bucket, flyId) {
+      bucket.typeCounts[flyId] = (bucket.typeCounts[flyId] || 0) + 1;
+    }
+
+    function recordShot(dir, options = {}) {
+      forEachTelemetryBucket((bucket) => {
+        bucket.shots += 1;
+        if (options.fromDarkSight) bucket.darkSightShots += 1;
+        if (dir && dir.includes('_')) bucket.specialUses += 0.35;
+      });
+    }
+
+    function recordJump() {
+      forEachTelemetryBucket((bucket) => {
+        bucket.jumps += 1;
+        bucket.specialUses += 0.4;
+      });
+    }
+
+    function recordLineShot() {
+      forEachTelemetryBucket((bucket) => {
+        bucket.lineShots += 1;
+        bucket.specialUses += 1;
+      });
+    }
+
+    function recordCatchTelemetry(fly, options = {}) {
+      state.cognitive.run.catches += 1;
+      bumpTelemetryType(state.cognitive.run, fly.id);
+      state.cognitive.level.catches += 1;
+      bumpTelemetryType(state.cognitive.level, fly.id);
+      if (options.chainSize > 1) {
+        state.cognitive.run.multiCatchBursts += 1;
+        state.cognitive.level.multiCatchBursts += 1;
+      }
+      if (options.rowChain) {
+        state.cognitive.run.rowChains += 1;
+        state.cognitive.level.rowChains += 1;
+      }
+      if (['firefly', 'hourglass', 'medicinal'].includes(fly.id)) {
+        state.cognitive.run.supportCatches += 1;
+        state.cognitive.level.supportCatches += 1;
+      }
+      if (state.cognitive.run.seconds - state.cognitive.lastDamageAtRun <= 4.5) {
+        state.cognitive.run.recoveryCatches += 1;
+      }
+      if (state.cognitive.level.seconds - state.cognitive.lastDamageAtLevel <= 4.5) {
+        state.cognitive.level.recoveryCatches += 1;
+      }
+    }
+
+    function recordLetterResult(correct) {
+      forEachTelemetryBucket((bucket) => {
+        if (correct) bucket.correctLetters += 1;
+        else bucket.wrongLetters += 1;
+      });
+    }
+
+    function recordBombHit() {
+      forEachTelemetryBucket((bucket) => {
+        bucket.bombHits += 1;
+      });
+    }
+
+    function recordDamage(sourceName = '') {
+      forEachTelemetryBucket((bucket) => {
+        bucket.damageEvents += 1;
+        if (sourceName) bucket.rivalHits += 1;
+      });
+      state.cognitive.lastDamageAtRun = state.cognitive.run.seconds;
+      state.cognitive.lastDamageAtLevel = state.cognitive.level.seconds;
+    }
+
+    function recordDarkSightScan() {
+      forEachTelemetryBucket((bucket) => {
+        bucket.darkSightScans += 1;
+        bucket.specialUses += 0.2;
+      });
+    }
+
+    function updateCognitiveTimers(dt) {
+      state.runElapsed += dt;
+      state.levelElapsed += dt;
+      forEachTelemetryBucket((bucket) => {
+        bucket.seconds += dt;
+        if (state.health.frog <= 38) bucket.lowHealthTime += dt;
+      });
+    }
+
+    function getCognitiveProfile() {
+      const bucket = state.cognitive.level;
+      const catches = Math.max(1, bucket.catches);
+      const shots = Math.max(1, bucket.shots);
+      const letterTotal = bucket.correctLetters + bucket.wrongLetters;
+      const uniqueTypes = Object.keys(bucket.typeCounts).length;
+      const precision = clamp(bucket.catches / Math.max(1, bucket.shots * 1.25), 0, 1);
+      const patternReading = clamp(
+        letterTotal > 0
+          ? bucket.correctLetters / Math.max(1, letterTotal)
+          : 0.44 + bucket.rowChains * 0.06 + bucket.multiCatchBursts * 0.05,
+        0,
+        1
+      );
+      const predictivePlay = clamp(
+        (bucket.jumps * 0.75 + bucket.multiCatchBursts * 1.1 + bucket.lineShots * 1.35 + bucket.darkSightShots * 0.8) / Math.max(3, shots),
+        0,
+        1
+      );
+      const adaptability = clamp(
+        (bucket.recoveryCatches + bucket.supportCatches * 0.7 + bucket.darkSightScans * 0.45) / Math.max(2, bucket.damageEvents + bucket.bombHits + 2),
+        0,
+        1
+      );
+      const curiosity = clamp(
+        (uniqueTypes / 8) * 0.62 + (bucket.specialUses / Math.max(3, catches)) * 0.38,
+        0,
+        1
+      );
+      const risk = clamp(
+        (bucket.bombHits + bucket.rivalHits * 0.9 + bucket.wrongLetters * 0.35) / Math.max(3, catches),
+        0,
+        1
+      );
+      const control = clamp(precision * 0.62 + (1 - risk) * 0.38, 0, 1);
+      const mastery = clamp((patternReading + predictivePlay + adaptability + control) * 0.25, 0, 1);
+
+      let styleTag = 'BALANCED';
+      if (predictivePlay >= 0.6 && control >= 0.58) styleTag = 'PREDICTIVE';
+      else if (curiosity >= 0.56 && risk >= 0.38) styleTag = 'AGGRESSIVE';
+      else if (control >= 0.64 && risk <= 0.24) styleTag = 'CAREFUL';
+      else if (adaptability >= 0.56) styleTag = 'RESILIENT';
+      else if (patternReading >= 0.62) styleTag = 'PATTERN';
+
+      state.cognitive.styleTag = styleTag;
+
+      return {
+        style_tag: styleTag,
+        precision: Number(precision.toFixed(3)),
+        pattern_reading: Number(patternReading.toFixed(3)),
+        predictive_play: Number(predictivePlay.toFixed(3)),
+        adaptability: Number(adaptability.toFixed(3)),
+        curiosity: Number(curiosity.toFixed(3)),
+        risk: Number(risk.toFixed(3)),
+        control: Number(control.toFixed(3)),
+        mastery: Number(mastery.toFixed(3)),
+        actions: {
+          shots: bucket.shots,
+          catches: bucket.catches,
+          jumps: bucket.jumps,
+          line_shots: bucket.lineShots,
+          wrong_letters: bucket.wrongLetters,
+          bomb_hits: bucket.bombHits,
+          rival_hits: bucket.rivalHits
+        }
+      };
     }
 
     function flyUnlockLevel(id) {
@@ -2151,58 +2435,75 @@
     }
 
     function buildLocalDirectorDirective() {
-      const pressure = clamp((state.score / Math.max(1, state.levelGoal)) * 0.5 + state.level * 0.06, 0, 1.8);
+      const levelScore = getLevelScore();
+      const targetTime = getLevelTargetTime();
+      const progress = state.levelGoal > 0 ? levelScore / Math.max(1, state.levelGoal) : 0;
+      const pace = state.levelElapsed / Math.max(1, targetTime);
+      const profile = getCognitiveProfile();
+      const behind = progress + 0.08 < pace || profile.control < 0.42 || state.health.frog < 44;
+      const dominating = progress > pace + 0.16 && profile.mastery > 0.56;
+      const curiosityLow = profile.curiosity < 0.34;
+      const pressure = clamp(progress * 0.72 + pace * 0.18 + state.level * 0.06 + (dominating ? 0.28 : 0) - (behind ? 0.16 : 0), 0, 2.1);
       const swarmMood = Math.sin((state.frame + state.level * 33) * 0.021);
-      const heavy = swarmMood > 0.45;
-      const safe = swarmMood < -0.45;
+      const heavy = dominating || swarmMood > 0.45;
+      const safe = behind || swarmMood < -0.45;
+      const flavor = behind
+        ? 'RECOVERY WINDOW'
+        : (dominating ? (curiosityLow ? 'PATTERN SHIFT' : 'PRESSURE SPIKE') : (curiosityLow ? 'FRESH SWARM' : 'MIXED FLOW'));
       return {
         duration_s: 7 + Math.random() * 4,
-        flavor_text: heavy ? 'SWARM SPIKE' : (safe ? 'CALM WINDOW' : 'MIXED FLOW'),
+        flavor_text: flavor,
         environment: {
-          wind_scale: heavy ? 1.25 : (safe ? 0.78 : 1),
+          wind_scale: heavy ? 1.2 : (safe ? 0.82 : (profile.predictive_play > 0.55 ? 1.08 : 1)),
           lightning_scale: clamp(0.9 + pressure * 0.6, 0.6, 1.9),
-          darkness_scale: state.level >= 11 ? (safe ? 0.74 : (heavy ? 1.2 : 1)) : 1,
-          rain_mode: state.level >= 4 && Math.random() < 0.15 ? 'on' : 'keep',
-          snow_mode: state.level >= 8 && Math.random() < 0.1 ? 'on' : 'keep',
+          darkness_scale: state.level >= 11 ? (safe ? 0.68 : (heavy ? 1.24 : 1)) : 1,
+          rain_mode: state.level >= 4 && Math.random() < (curiosityLow ? 0.22 : 0.15) ? 'on' : 'keep',
+          snow_mode: state.level >= 8 && Math.random() < (behind ? 0.06 : 0.12) ? 'on' : 'keep',
           high_wind_mode: heavy ? 'on' : 'keep'
         },
         spawning: {
-          cap_delta: heavy ? 2 : (safe ? -1 : 0),
-          interval_scale: heavy ? 0.84 : (safe ? 1.15 : 1),
-          extra_chance_delta: heavy ? 0.06 : (safe ? -0.05 : 0),
+          cap_delta: heavy ? 2 : (safe ? -1 : 1),
+          interval_scale: heavy ? 0.82 : (safe ? 1.12 : 0.94),
+          extra_chance_delta: heavy ? 0.08 : (safe ? -0.05 : 0.03),
           pool_overrides: {
-            normal: clamp(0.42 - pressure * 0.08, 0.12, 0.52),
-            grasshopper: clamp(0.16 + pressure * 0.05, 0.1, 0.25),
-            bomb: clamp(0.08 + pressure * 0.08, 0.03, 0.22),
-            firefly: clamp(0.07 + (safe ? 0.08 : 0), 0.05, 0.2),
-            hourglass: clamp(0.06 + (safe ? 0.07 : 0), 0.04, 0.16),
-            poison: clamp(0.06 + pressure * 0.05, 0.03, 0.18),
-            spiral: clamp(0.08 + pressure * 0.06, 0.03, 0.24),
-            medicinal: clamp(0.06 + (safe ? 0.06 : 0), 0.04, 0.18),
+            normal: clamp(0.4 - pressure * 0.09 + (curiosityLow ? 0.06 : 0), 0.1, 0.54),
+            grasshopper: clamp(0.14 + pressure * 0.04 + profile.predictive_play * 0.05, 0.08, 0.28),
+            bomb: clamp(0.07 + pressure * 0.08 + Math.max(0, profile.control - 0.45) * 0.07 - (behind ? 0.04 : 0), 0.02, 0.24),
+            firefly: clamp(0.07 + (safe ? 0.08 : 0) + (curiosityLow ? 0.04 : 0), 0.05, 0.24),
+            hourglass: clamp(0.06 + (safe ? 0.08 : 0) + (profile.adaptability < 0.42 ? 0.03 : 0), 0.04, 0.18),
+            poison: clamp(0.05 + pressure * 0.05 + Math.max(0, profile.mastery - 0.48) * 0.06, 0.02, 0.2),
+            spiral: clamp(0.07 + pressure * 0.06 + profile.predictive_play * 0.05, 0.03, 0.26),
+            medicinal: clamp(0.06 + (safe ? 0.07 : 0) + Math.max(0, profile.risk - 0.28) * 0.08, 0.04, 0.22),
             letter: state.level >= 7 ? clamp(0.08 + (safe ? 0.04 : 0), 0.05, 0.18) : 0
           }
         },
         flies: {
-          speed_scale: heavy ? 1.1 : (safe ? 0.92 : 1),
-          frog_pull_scale: heavy ? 1.18 : (safe ? 0.86 : 1)
+          speed_scale: heavy ? 1.12 : (safe ? 0.92 : (curiosityLow ? 0.98 : 1.04)),
+          frog_pull_scale: heavy ? 1.18 : (safe ? 0.88 : (profile.predictive_play > 0.58 ? 1.08 : 1))
         },
         rivals: {
-          speed_scale: clamp(0.96 + pressure * 0.18, 0.86, 1.3),
-          aggression_scale: clamp(0.95 + pressure * 0.24, 0.84, 1.45),
-          corner_hop_scale: heavy ? 1.16 : 0.95,
-          tongue_rate_scale: heavy ? 1.14 : 0.92
+          speed_scale: clamp(0.94 + pressure * 0.2 + (dominating ? 0.05 : 0), 0.84, 1.34),
+          aggression_scale: clamp(0.92 + pressure * 0.25 + (profile.control > 0.58 ? 0.05 : 0), 0.82, 1.5),
+          corner_hop_scale: heavy ? 1.18 : (safe ? 0.92 : 1),
+          tongue_rate_scale: heavy ? 1.16 : (safe ? 0.9 : 1)
         }
       };
     }
 
     function getDirectorSnapshot() {
+      const profile = getCognitiveProfile();
       return {
         mode: state.mode,
         level: state.level,
         score: state.score,
+        level_score: getLevelScore(),
         goal: state.levelGoal,
+        level_progress: Number(getLevelProgressRatio().toFixed(3)),
+        level_elapsed_s: Number(state.levelElapsed.toFixed(2)),
+        target_time_s: Number(getLevelTargetTime().toFixed(2)),
         lives: state.lives,
         combo: state.combo,
+        cognitive_profile: profile,
         flies: {
           count: state.flies.length,
           types: state.flies.reduce((acc, f) => {
@@ -2300,10 +2601,10 @@
       if (total <= 0) return { normal: 1 };
 
       // Competency shaping: keep level identity while adapting pressure.
-      const scoreFactor = state.levelGoal > 0 ? state.score / state.levelGoal : 0;
+      const scoreFactor = state.levelGoal > 0 ? getLevelScore() / state.levelGoal : 0;
       const comboFactor = state.combo > 1 ? Math.min(0.5, (state.combo - 1) * 0.06) : 0;
       const hpFactor = state.health.maxFrog > 0 ? state.health.frog / state.health.maxFrog : 1;
-      const mastery = clamp(scoreFactor * 0.9 + comboFactor + hpFactor * 0.15, 0, 1.8);
+      const mastery = clamp(scoreFactor * 0.82 + comboFactor + hpFactor * 0.15 + getCognitiveProfile().mastery * 0.3, 0, 1.8);
 
       if (mastery < 0.55) {
         if (filtered.normal) filtered.normal *= 1.22;
@@ -2365,6 +2666,7 @@
         return false;
       }
 
+      recordDamage(sourceName);
       state.health.frog = Math.max(0, state.health.frog - amount);
       state.lives = Math.max(0, Math.ceil(state.health.frog / 20));
       state.shakeTimer = Math.max(state.shakeTimer, 0.22);
@@ -2694,6 +2996,7 @@
 
     function updateHud() {
       const focus = getLevelFocus(state.level);
+      const levelScore = getLevelScore();
       scoreLine.textContent = isHindi() ? `स्कोर ${state.score}` : `SCORE ${state.score}`;
       levelLine.textContent = isHindi() ? `स्तर ${state.level} · ${focus.title}` : `LEVEL ${state.level} · ${focus.title}`;
       frogHealthLine.textContent = isHindi()
@@ -2708,7 +3011,7 @@
         progressPct = 1 - state.quest.timer / Math.max(1, state.quest.duration);
         progressLine.textContent = isHindi() ? `अक्षर समय ${buildBar(progressPct)}` : `LETTER TIMER ${buildBar(progressPct)}`;
       } else {
-        const scorePct = state.levelGoal > 0 ? state.score / state.levelGoal : 1;
+        const scorePct = state.levelGoal > 0 ? levelScore / state.levelGoal : 1;
         if (state.quest.active) {
           const qp = state.quest.target.length > 0 ? state.quest.progress / state.quest.target.length : 1;
           progressPct = Math.min(scorePct, qp);
@@ -2719,8 +3022,9 @@
       }
 
       const hideUi = state.mode === MODE.WIN;
+      const touchLayout = isTouchLayout();
       hud.style.display = hideUi ? 'none' : 'grid';
-      help.style.display = hideUi ? 'none' : 'block';
+      help.style.display = (hideUi || touchLayout) ? 'none' : 'block';
       flashBar.classList.toggle('show', !hideUi);
       flashLine.textContent = getBottomFlashLine();
       if (activeRivals().length) {
@@ -2749,6 +3053,11 @@
     function setLevel(level) {
       state.level = clamp(level, 1, state.maxLevel);
       const cfg = currentConfig();
+      state.levelScoreStart = state.score;
+      state.levelElapsed = 0;
+      state.cognitive.level = createTelemetryBucket();
+      state.cognitive.lastDamageAtRun = -99;
+      state.cognitive.lastDamageAtLevel = -99;
       state.currentEnv = environments[(state.level - 1) % environments.length];
       state.levelGoal = cfg.goal;
       state.baseSpawnInterval = cfg.interval;
@@ -2779,7 +3088,7 @@
         state.quest.label = state.quest.target;
         state.quest.reward = 550;
         state.quest.spawnCycle = 0;
-        state.quest.duration = 28;
+        state.quest.duration = cfg.letterTime || 36;
         state.quest.timer = state.quest.duration;
         state.quest.timedOut = false;
       } else {
@@ -2802,7 +3111,7 @@
 
       if (state.level === 12) {
         state.finalChallenge.active = true;
-        state.finalChallenge.duration = 30;
+        state.finalChallenge.duration = cfg.finalTime || 38;
         state.finalChallenge.timer = state.finalChallenge.duration;
         state.finalChallenge.shotCooldown = 0.9;
         state.finalChallenge.bullets = [];
@@ -2821,6 +3130,9 @@
 
     function resetRun() {
       state.score = 0;
+      state.levelScoreStart = 0;
+      state.levelElapsed = 0;
+      state.runElapsed = 0;
       state.combo = 1;
       state.comboChain = 0;
       state.comboTimer = 0;
@@ -2884,6 +3196,7 @@
       state.tongue.state = 'IDLE';
       state.tongue.length = 0;
       state.tongue.spinPhase = 0;
+      state.tongue.rowChain = false;
       state.tongue.drunkShot = false;
       state.tongue.drunkArcDir = 1;
       state.tongue.caughtFlies = [];
@@ -2894,6 +3207,11 @@
       state.medAim.toX = 0;
       state.medAim.toY = 0;
       state.medAim.flies = 0;
+      state.cognitive.run = createTelemetryBucket();
+      state.cognitive.level = createTelemetryBucket();
+      state.cognitive.lastDamageAtRun = -99;
+      state.cognitive.lastDamageAtLevel = -99;
+      state.cognitive.styleTag = 'BALANCED';
       state.mobileJumpArmed = false;
       setLevel(1);
       updateHud();
@@ -3044,6 +3362,7 @@
       if (state.level < 3) return;
       if (state.frog.jumpCooldown > 0) return;
       clearMobileJumpArm();
+      recordJump();
       const v = getVector(dir);
       const jumpBoost = state.effects.loveJump > 0 ? 1.3 : 1;
       state.frog.vx += v.dx * 320 * jumpBoost;
@@ -3084,6 +3403,7 @@
 
       state.frog.facing = dir;
       const shotDir = resolveShotDirection(dir);
+      recordShot(shotDir, { fromDarkSight: state.effects.nightVision > 0 && state.weather.darkness > 0.4 });
       const v = getVector(shotDir);
 
       state.tongue.state = 'OUT';
@@ -3094,6 +3414,7 @@
       state.tongue.outSpeed = 1380;
       state.tongue.retractSpeed = 0;
       state.tongue.caughtFlies = [];
+      state.tongue.rowChain = false;
       state.tongue.maxLength = state.tongue.baseMaxLength;
       state.tongue.drunkShot = state.effects.drunk > 0;
       state.tongue.drunkArcDir = Math.random() < 0.5 ? -1 : 1;
@@ -3140,6 +3461,7 @@
 
     function triggerBombPenalty(fly) {
       playSound('bomb');
+      recordBombHit();
       const penalty = Math.max(80, Math.floor(state.level * 24 + state.score * 0.2));
       state.score = Math.max(0, state.score - penalty);
       state.combo = 1;
@@ -3201,6 +3523,7 @@
     function handleLetterCatch(fly) {
       const expected = state.quest.target[state.quest.progress] || '';
       if (fly.letter === expected) {
+        recordLetterResult(true);
         state.quest.progress += 1;
         state.score += 100;
         addFloatText(fly.x, fly.y - 24, isHindi() ? `+100 अक्षर ${fly.letter}` : `+100 ${fly.letter}`, '#ddf3ff');
@@ -3234,6 +3557,7 @@
           }
         }
       } else {
+        recordLetterResult(false);
         state.quest.progress = Math.max(0, state.quest.progress - 1);
         state.combo = 1;
         state.comboChain = 0;
@@ -3245,6 +3569,7 @@
 
     function onCatch(fly, x, y, options = {}) {
       const protectBombs = !!options.protectBombs || state.effects.medicinal > 0;
+      recordCatchTelemetry(fly, options);
       state.comboChain += 1;
       state.combo = Math.min(6, 1 + Math.floor(state.comboChain / 3));
       state.comboTimer = 2.5;
@@ -3341,10 +3666,10 @@
       if (state.level === 7 && state.quest.active) {
         return state.quest.completed || state.quest.timer <= 0;
       }
-      if (state.score < state.levelGoal) return false;
+      if (getLevelScore() < state.levelGoal) return false;
       if (state.quest.active && !state.quest.completed) return false;
       for (const rv of activeRivals()) {
-        if (state.score <= rv.score) return false;
+        if (getLevelScore() <= rv.score) return false;
       }
       return true;
     }
@@ -3419,10 +3744,10 @@
       if (state.level === 12 && state.finalChallenge.active) {
         state.finalChallenge.timer = 0;
       } else {
-        state.score = Math.max(state.score, state.levelGoal);
+        state.score = Math.max(state.score, state.levelScoreStart + state.levelGoal);
       }
       for (const rv of activeRivals()) {
-        rv.score = Math.min(rv.score, state.score - 1);
+        rv.score = Math.min(rv.score, getLevelScore() - 1);
       }
       if (state.quest.active && !state.quest.completed) {
         state.quest.completed = true;
@@ -3510,7 +3835,7 @@
           }
         }
 
-        if (rv.score >= rv.target && rv.score > state.score + 20) {
+        if (rv.score >= rv.target && rv.score > getLevelScore() + 20) {
           rv.result = isHindi() ? getHindiRivalEvent(rv.name, 'wins') : `${rv.name} WINS`;
           state.mode = MODE.GAME_OVER;
         }
@@ -3592,7 +3917,7 @@
         }
       }
 
-      if (rv.score >= rv.target && rv.score > state.score + 20) {
+      if (rv.score >= rv.target && rv.score > getLevelScore() + 20) {
         rv.result = isHindi() ? getHindiRivalEvent(rv.name, 'wins') : `${rv.name} WINS`;
         state.mode = MODE.GAME_OVER;
       }
@@ -3774,6 +4099,7 @@
         addFloatText(frogX(), frogY() - 72, isHindi() ? 'सीधी लाइन नहीं' : 'NO CLEAR LINE', '#dbeaff');
         return;
       }
+      recordLineShot();
       const anchor = best.chain.reduce((closest, fly) => {
         const d = Math.hypot(fly.x - frogX(), fly.y - frogY());
         return !closest || d < closest.dist ? { fly, dist: d } : closest;
@@ -3888,6 +4214,7 @@
         }
 
         if (caughtOrdered.length > 0) {
+          tongue.rowChain = tongue.rowChain || (!sticky && caughtOrdered.length > 1);
           tongue.caughtFlies.push(...caughtOrdered);
           state.flies = state.flies.filter((fly) => !caughtRefs.has(fly));
           if (caughtOrdered.length > 1) {
@@ -3939,12 +4266,15 @@
           tongue.state = 'IDLE';
           if (tongue.caughtFlies.length > 0) {
             const catches = [...tongue.caughtFlies];
+            const rowChain = tongue.rowChain;
             tongue.caughtFlies = [];
+            tongue.rowChain = false;
             for (const c of catches) {
-              onCatch(c, frogX(), frogY() + 16);
+              onCatch(c, frogX(), frogY() + 16, { chainSize: catches.length, rowChain });
               spawnBurst(frogX(), frogY() + 14, c.color, 9, 0.35);
             }
           } else {
+            tongue.rowChain = false;
             state.comboTimer = Math.max(0, state.comboTimer - 0.8);
             if (state.comboTimer <= 0) {
               state.combo = 1;
@@ -4162,6 +4492,7 @@
         return;
       }
 
+      updateCognitiveTimers(dt);
       updateAIDirector(dt);
 
       const frozen = state.effects.timeFreeze > 0;
@@ -5499,6 +5830,13 @@
         }
       });
 
+      bindActionButton(btnReset, () => {
+        if (state.mode === MODE.START) return;
+        clearPendingArrowShot();
+        clearMobileJumpArm();
+        startGameFromMenu();
+      });
+
       bindActionButton(btnPause, () => {
         if (state.mode !== MODE.START && state.mode !== MODE.WIN && state.mode !== MODE.GAME_OVER) {
           togglePause();
@@ -5538,6 +5876,7 @@
 
     function renderGameToText() {
       const tongue = state.tongue;
+      const cognitiveProfile = getCognitiveProfile();
       const payload = {
         coordinate_system: 'origin=(0,0) top-left; +x right; +y down',
         language: state.language,
@@ -5546,6 +5885,10 @@
         high_score: state.highScore,
         level: state.level,
         level_goal: state.levelGoal,
+        level_score: getLevelScore(),
+        level_progress: Number(getLevelProgressRatio().toFixed(3)),
+        level_elapsed_s: Number(state.levelElapsed.toFixed(2)),
+        target_time_s: Number(getLevelTargetTime().toFixed(2)),
         combo: state.combo,
         environment: state.currentEnv.name,
         weather: {
@@ -5563,6 +5906,7 @@
           note: state.aiDirector.lastNote,
           ttl_s: Number(state.aiDirector.directiveTimer.toFixed(2))
         },
+        cognitive_profile: cognitiveProfile,
         frog: {
           x: Number(frogX().toFixed(1)),
           y: Number(frogY().toFixed(1)),
